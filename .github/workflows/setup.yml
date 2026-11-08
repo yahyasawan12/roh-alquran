@@ -1,4 +1,4 @@
-name: Generate Logo and Extract Full Content
+name: Pro AI & Vector Logo Studio
 
 on:
   push:
@@ -7,181 +7,179 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-assets-and-db:
+  design-logo:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python & Image Libraries
-        run: pip install requests beautifulsoup4 lxml pillow cairosvg cloudscraper
+      - name: Install Pro Graphics Libraries
+        run: pip install requests pillow numpy cairosvg opencv-python-headless
 
-      - name: Create Logo & Extract Full Library Content
+      - name: Render High-Precision Logos
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
           CHANNEL_ID: "-1004482762316"
         run: |
-          cat << 'EOF' > process_all.py
-          import os, io, json, re
+          cat << 'EOF' > studio.py
+          import os, io
           import requests
-          import cloudscraper
-          from PIL import Image, ImageDraw
+          import numpy as np
+          import cv2
+          from PIL import Image
           import cairosvg
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
           CHANNEL_ID = os.environ.get("CHANNEL_ID", "").strip()
-
           os.makedirs("assets", exist_ok=True)
-          os.makedirs("data", exist_ok=True)
 
-          def tg_msg(text):
-              requests.post(
-                  f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                  json={"chat_id": ADMIN_ID, "text": text, "parse_mode": "Markdown"},
-                  timeout=15
-              )
+          def send_photo(path, caption):
+              with open(path, "rb") as f:
+                  requests.post(
+                      f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
+                      data={"chat_id": ADMIN_ID, "caption": caption, "parse_mode": "Markdown"},
+                      files={"photo": f},
+                      timeout=30
+                  )
 
-          def make_logo():
-              # 1. التحقق مما إذا أرسل المستخدم الصورة الأصلية للبوت لتعديلها بدقتها الأصلية
-              base_img = None
-              try:
-                  up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates", timeout=15).json()
-                  for item in reversed(up.get("result", [])):
-                      msg = item.get("message") or {}
-                      photos = msg.get("photo")
-                      if photos:
-                          file_id = photos[-1]["file_id"]
-                          f_info = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={file_id}", timeout=15).json()
-                          f_path = f_info["result"]["file_path"]
-                          img_bytes = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{f_path}", timeout=20).content
-                          base_img = Image.open(io.BytesIO(img_bytes)).convert("RGBA")
-                          break
-              except Exception as e:
-                  print("Photo fetch note:", e)
+          # 1. جلب الصورة الأصلية المرسلة للبوت بدقتها الكاملة
+          orig_bytes = None
+          try:
+              up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates", timeout=15).json()
+              for item in reversed(up.get("result", [])):
+                  msg = item.get("message") or {}
+                  photos = msg.get("photo")
+                  if photos:
+                      fid = photos[-1]["file_id"]
+                      finfo = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=15).json()
+                      fpath = finfo["result"]["file_path"]
+                      orig_bytes = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=20).content
+                      with open("assets/raw_input.jpg", "wb") as f:
+                          f.write(orig_bytes)
+                      break
+          except Exception as e:
+              print("Update fetch note:", e)
 
-              if base_img:
-                  w, h = base_img.size
-                  draw = ImageDraw.Draw(base_img)
-                  # مسح حرفي (ءة) فقط على يسار الجذع مع الحفاظ على (القر) والشجرة و(حياة) 100%
-                  draw.rectangle([int(w * 0.05), int(h * 0.44), int(w * 0.415), int(h * 0.652)], fill=(255, 255, 255, 255))
+          if orig_bytes:
+              # تكبير الصورة الأصلية 4 أضعاف (Super-Resolution 1600x1600) للحصول على حواف فيكتور ناعمة جداً
+              pil_img = Image.open(io.BytesIO(orig_bytes)).convert("RGB")
+              S = 1600
+              pil_img = pil_img.resize((S, S), Image.Resampling.LANCZOS)
+              arr = np.array(pil_img)
 
-                  # رسم حرف (ن) بنفس السماكة واللون البني الداكن (#3B2820)
-                  brown = (59, 40, 32, 255)
-                  stroke = max(int(w * 0.033), 10)
-                  bbox = [int(w * 0.16), int(h * 0.48), int(w * 0.39), int(h * 0.638)]
-                  draw.arc(bbox, start=0, end=180, fill=brown, width=stroke)
-                  # قوائم حرف النون بحواف دائرية ناعمة
-                  r_cap = stroke // 2
-                  for cx in [bbox[0] + r_cap, bbox[2] - r_cap]:
-                      draw.line([(cx, int(h * 0.525)), (cx, int(h * 0.565))], fill=brown, width=stroke)
-                      draw.ellipse([cx - r_cap, int(h * 0.525) - r_cap, cx + r_cap, int(h * 0.525) + r_cap], fill=brown)
+              # أ. قياس مكان السطر وسماكة الخط واللون البني بدقة البكسل من كلمة (القر)
+              # منطقة الوصلة الأفقية بين اللام والقاف: x = 0.78..0.81, y = 0.55..0.68
+              strip = arr[int(S*0.55):int(S*0.685), int(S*0.785):int(S*0.805)]
+              gray_strip = np.mean(strip, axis=(1, 2))
+              brown_rows = np.where(gray_strip < 130)[0]
+              if len(brown_rows) > 5:
+                  y_base_top = int(S*0.55) + int(brown_rows[0])
+                  y_base_bot = int(S*0.55) + int(brown_rows[-1])
+              else:
+                  y_base_top = int(S*0.618)
+                  y_base_bot = int(S*0.662)
 
-                  # نقطة النون في المنتصف
-                  dot_r = int(w * 0.021)
-                  dot_cx, dot_cy = int(w * 0.275), int(h * 0.495)
-                  draw.ellipse([dot_cx - dot_r, dot_cy - dot_r, dot_cx + dot_r, dot_cy + dot_r], fill=brown)
+              sw = max(y_base_bot - y_base_top, int(S * 0.042))
+              y_center = (y_base_top + y_base_bot) / 2.0
 
-                  out = base_img.convert("RGB")
-                  out.save("assets/logo.png", "PNG", quality=100)
-                  return True
+              # قياس ارتفاع وحجم نقطتي حرف القاف لمطابقة نقطة النون معها 100%
+              q_dots_zone = arr[int(S*0.43):int(S*0.52), int(S*0.65):int(S*0.77)]
+              q_gray = np.mean(q_dots_zone, axis=2)
+              q_y_idx, q_x_idx = np.where(q_gray < 120)
+              if len(q_y_idx) > 10:
+                  y_dot_center = int(S*0.43) + int(np.median(q_y_idx))
+                  dot_r = int((np.max(q_y_idx) - np.min(q_y_idx)) / 2.0)
+              else:
+                  y_dot_center = int(S*0.482)
+                  dot_r = int(sw * 0.56)
 
-              # 2. توليد فيكتور عالي الدقة في حال لم تُرسل الصورة بعد
-              svg_code = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1024" height="1024">
-                <rect width="1000" height="1000" fill="#FFFFFF"/>
-                <!-- جذع الشجرة والأغصان -->
-                <path d="M435 240 L435 655 M435 320 L385 265 M435 320 L485 265 M435 405 L380 350 M435 405 L490 350 M435 490 L380 435 M435 490 L490 435" stroke="#3B2820" stroke-width="24" stroke-linecap="round"/>
-                <!-- الأوراق الخضراء السبع -->
-                <path d="M435 245 C390 175 435 95 495 75 C515 145 485 220 435 245 Z" fill="#00B800"/>
-                <path d="M385 265 C330 255 315 200 335 165 C380 185 400 230 385 265 Z" fill="#00B800"/>
-                <path d="M485 265 C540 255 555 200 535 165 C490 185 470 230 485 265 Z" fill="#00B800"/>
-                <path d="M380 350 C325 340 310 285 330 250 C375 270 395 315 380 350 Z" fill="#00B800"/>
-                <path d="M490 350 C545 340 560 285 540 250 C495 270 475 315 490 350 Z" fill="#00B800"/>
-                <path d="M380 435 C325 425 310 370 330 335 C375 355 395 400 380 435 Z" fill="#00B800"/>
-                <path d="M490 435 C545 425 560 370 540 335 C495 355 475 400 490 435 Z" fill="#00B800"/>
-                <!-- كلمة القرآن بالبني -->
-                <path d="M865 475 L865 620 M800 475 L800 620 L605 620 M660 620 C660 515 745 515 745 620 M605 555 L605 620 C605 655 545 690 470 695" fill="none" stroke="#3B2820" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="680" cy="485" r="17" fill="#3B2820"/>
-                <circle cx="728" cy="485" r="17" fill="#3B2820"/>
-                <!-- حرف النون في القرآن -->
-                <path d="M375 535 L375 580 C375 645 185 645 185 580 L185 535" fill="none" stroke="#3B2820" stroke-width="32" stroke-linecap="round"/>
-                <circle cx="280" cy="495" r="19" fill="#3B2820"/>
-                <!-- كلمة حياة بالأزرق -->
-                <path d="M435 655 L435 825 L795 825 C785 735 710 725 660 765 M600 730 L600 825" fill="none" stroke="#0091D5" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="575" cy="872" r="18" fill="#0091D5"/>
-                <circle cx="625" cy="872" r="18" fill="#0091D5"/>
-                <circle cx="330" cy="775" r="52" fill="none" stroke="#0091D5" stroke-width="34"/>
-                <circle cx="235" cy="750" r="18" fill="#00B800"/>
-                <circle cx="235" cy="800" r="18" fill="#00B800"/>
-              </svg>'''
-              with open("assets/logo.svg", "w", encoding="utf-8") as f:
-                  f.write(svg_code)
-              cairosvg.svg2png(bytestring=svg_code.encode("utf-8"), write_to="assets/logo.png", output_width=1024, output_height=1024)
-              return False
+              # قياس الحد الأيسر لجذع الشجرة بدقة لمنع لمسه
+              trunk_zone = arr[int(S*0.50):int(S*0.62), int(S*0.40):int(S*0.46)]
+              trunk_x_idx = np.where(np.mean(trunk_zone, axis=(0, 2)) < 130)[0]
+              trunk_left_x = int(S*0.40) + int(trunk_x_idx[0]) if len(trunk_x_idx) > 0 else int(S*0.422)
 
-          used_original = make_logo()
+              # ب. مسح جراحي ذكي لمنطقة (ءة) بالكامل (يستهدف اللون البني فقط ويحمي الأزرق والأخضر والجذع)
+              roi = arr[int(S*0.42):int(S*0.688), int(S*0.04):trunk_left_x - 4]
+              r_ch, g_ch, b_ch = roi[:, :, 0].astype(int), roi[:, :, 1].astype(int), roi[:, :, 2].astype(int)
+              # البني/الرمادي الداكن ليس أزرق (b - r < 35) وليس أخضر (g - r < 35)
+              is_brown_or_shadow = (r_ch < 245) & ((b_ch - r_ch) < 35) & ((g_ch - r_ch) < 35)
+              roi[is_brown_or_shadow] = [255, 255, 255]
+              arr[int(S*0.42):int(S*0.688), int(S*0.04):trunk_left_x - 4] = roi
 
-          # إرسال الشعار الجديد للمطور وتعيينه صورة للقناة الخاصة تلقائياً
-          with open("assets/logo.png", "rb") as f:
-              requests.post(
-                  f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
-                  data={"chat_id": ADMIN_ID, "caption": "🎨 *تم تجهيز شعار (القرآن حياة) بدقة عالية واعتماده للمشروع!*"},
-                  files={"photo": f},
-                  timeout=30
-              )
-          with open("assets/logo.png", "rb") as f:
-              requests.post(
-                  f"https://api.telegram.org/bot{TOKEN}/setChatPhoto",
-                  data={"chat_id": CHANNEL_ID},
-                  files={"photo": f},
-                  timeout=30
-              )
+              clean_base = Image.fromarray(arr).convert("RGBA")
 
-          # 3. سحب المحتوى الكامل للمقالات والكتب وتفاصيل المنتجات من واجهة الموقع البرمجية
-          scraper = cloudscraper.create_scraper()
-          full_books = []
+              # ج. تصميم حرف (ن) هندسي مطابق تماماً لخط (القراءة) عبر فيكتور SVG فائق النعومة
+              x_right = trunk_left_x - int(sw * 1.35)
+              x_left = int(S * 0.155)
+              y_top = int(y_base_bot - sw * 2.55)
+              r_corner = int(sw * 1.15)
+              x_dot = (x_right + x_left) / 2.0
 
-          for ep, ctype in [
-              ("https://www.amin-sheikho.com/wp-json/wp/v2/product?per_page=100", "كتاب / إصدار"),
-              ("https://www.amin-sheikho.com/wp-json/wp/v2/posts?per_page=100", "مقالات ودراسات"),
-              ("https://www.amin-sheikho.com/wp-json/wp/v2/pages?per_page=100", "أقسام ومواضيع")
-          ]:
-              try:
-                  r = scraper.get(ep, timeout=25)
-                  if r.status_code == 200:
-                      for item in r.json():
-                          title = (item.get("title") or {}).get("rendered", "")
-                          content_html = (item.get("content") or {}).get("rendered", "")
-                          excerpt_html = (item.get("excerpt") or {}).get("rendered", "")
-                          link = item.get("link", "")
-                          if title and (content_html or excerpt_html):
-                              full_books.append({
-                                  "id": item.get("id"),
-                                  "type": ctype,
-                                  "title": re.sub(r"<[^>]+>", "", title).strip(),
-                                  "url": link,
-                                  "excerpt": re.sub(r"<[^>]+>", "", excerpt_html).strip(),
-                                  "content_html": content_html
-                              })
-              except Exception as e:
-                  print("Fetch error:", ep, e)
+              def render_overlay(with_maddah=False):
+                  maddah_svg = ""
+                  if with_maddah:
+                      # مدّة قرآنية أنيقة متناسقة فوق الألف/النون
+                      mx1 = x_right - int(sw * 0.2)
+                      mx2 = trunk_left_x + int(sw * 1.1)
+                      my = int(S * 0.455)
+                      m_sw = int(sw * 0.55)
+                      maddah_svg = f'<path d="M {mx2} {my} C {mx2 - sw*0.4} {my - sw*0.45}, {mx1 + sw*0.4} {my + sw*0.45}, {mx1} {my}" fill="none" stroke="#3B271E" stroke-width="{m_sw}" stroke-linecap="round"/>'
 
-          with open("data/full_content.json", "w", encoding="utf-8") as f:
-              json.dump({"count": len(full_books), "items": full_books}, f, ensure_ascii=False, indent=2)
+                  svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {S} {S}" width="{S}" height="{S}">
+                    <path d="M {x_right} {y_top}
+                             L {x_right} {y_center - r_corner}
+                             Q {x_right} {y_center} {x_right - r_corner} {y_center}
+                             L {x_left + r_corner} {y_center}
+                             Q {x_left} {y_center} {x_left} {y_center - r_corner}
+                             L {x_left} {y_top}"
+                          fill="none" stroke="#3B271E" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="{x_dot}" cy="{y_dot_center}" r="{dot_r}" fill="#3B271E"/>
+                    {maddah_svg}
+                  </svg>'''
+                  png_bytes = cairosvg.svg2png(bytestring=svg.encode("utf-8"), output_width=S, output_height=S)
+                  overlay = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+                  combined = Image.alpha_composite(clean_base, overlay).convert("RGB")
+                  return combined
 
-          tg_msg(
-              f"✅ *تم تحديث الشعار وسحب النصوص الكاملة لـ {len(full_books)} كتاباً ومقالاً وقسماً من الموقع!*\n"
-              "📌 كما تم تعيين شعار *(القرآن حياة)* صورة رسمية لقناتك الخاصة تلقائياً.\n"
-              "🚀 الخطوة القادمة: إطلاق الواجهة التفاعلية للتطبيق المصغر (Mini App) لتعاينها مباشرة على التابلت!"
-          )
+              v1 = render_overlay(with_maddah=False)
+              v1.save("assets/logo_v1_clean.png", "PNG", quality=100)
+              v1.save("assets/logo.png", "PNG", quality=100)
+
+              v2 = render_overlay(with_maddah=True)
+              v2.save("assets/logo_v2_maddah.png", "PNG", quality=100)
+
+              send_photo("assets/logo_v1_clean.png", "✨ *النسخة 1 (مطابقة 100% لخط وسطر الصورة الأصلية بدون أي زوائد)*")
+              send_photo("assets/logo_v2_maddah.png", "✨ *النسخة 2 (بنفس الخط الأصلي مع إضافة علامة المدّة لـ القرآن)*")
+
+              # تحديث صورة القناة الخاصة بالنسخة النقية الأولى تلقائياً
+              with open("assets/logo_v1_clean.png", "rb") as f:
+                  requests.post(
+                      f"https://api.telegram.org/bot{TOKEN}/setChatPhoto",
+                      data={"chat_id": CHANNEL_ID},
+                      files={"photo": f},
+                      timeout=30
+                  )
+
+          # 2. توليد نسخة ثالثة فنية بالذكاء الاصطناعي (Flux AI) للمقارنة
+          try:
+              prompt = "Minimalist flat vector islamic logo on pure white background, green sprouting tree growing from arabic calligraphy Al-Quran Hayat in dark brown and sky blue, clean geometric typography, professional app icon, 4k"
+              ai_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt)}?width=1024&height=1024&nologo=true&model=flux"
+              r_ai = requests.get(ai_url, timeout=35)
+              if r_ai.status_code == 200 and len(r_ai.content) > 5000:
+                  with open("assets/logo_v3_ai.png", "wb") as f:
+                      f.write(r_ai.content)
+                  send_photo("assets/logo_v3_ai.png", "🤖 *النسخة 3 (تصميم فني مقترح مولّد بالذكاء الاصطناعي)*")
+          except Exception as e:
+              print("AI gen note:", e)
           EOF
-          python3 process_all.py
+          python3 studio.py
 
-      - name: Commit Logo and Content
+      - name: Save Pro Logos
         run: |
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
-          git add assets/ data/
-          git diff --staged --quiet || git commit -m "Add Al-Quran Hayat logo and full content database"
+          git add assets/
+          git diff --staged --quiet || git commit -m "Update ultra-clean vector and AI logos"
           git push
