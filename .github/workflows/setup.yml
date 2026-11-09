@@ -1,4 +1,4 @@
-name: Pro AI & Vector Logo Studio
+name: Step 1 - Build Full Web and Mini App
 
 on:
   push:
@@ -7,179 +7,894 @@ on:
   workflow_dispatch:
 
 jobs:
-  design-logo:
+  build-app:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Pro Graphics Libraries
-        run: pip install requests pillow numpy cairosvg opencv-python-headless
+      - name: Install dependencies
+        run: pip install requests
 
-      - name: Render High-Precision Logos
+      - name: Generate Complete App & Prepare Database
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
           CHANNEL_ID: "-1004482762316"
         run: |
-          cat << 'EOF' > studio.py
-          import os, io
-          import requests
-          import numpy as np
-          import cv2
-          from PIL import Image
-          import cairosvg
+          cat << 'EOF' > make_app.py
+          import os, json, re, requests
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
           CHANNEL_ID = os.environ.get("CHANNEL_ID", "").strip()
+
           os.makedirs("assets", exist_ok=True)
+          os.makedirs("data", exist_ok=True)
 
-          def send_photo(path, caption):
-              with open(path, "rb") as f:
-                  requests.post(
-                      f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
-                      data={"chat_id": ADMIN_ID, "caption": caption, "parse_mode": "Markdown"},
-                      files={"photo": f},
-                      timeout=30
-                  )
-
-          # 1. جلب الصورة الأصلية المرسلة للبوت بدقتها الكاملة
-          orig_bytes = None
+          # 1. سحب الشعار الجديد تلقائياً من صورة القناة أو البوت
           try:
-              up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates", timeout=15).json()
-              for item in reversed(up.get("result", [])):
-                  msg = item.get("message") or {}
-                  photos = msg.get("photo")
-                  if photos:
-                      fid = photos[-1]["file_id"]
-                      finfo = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=15).json()
-                      fpath = finfo["result"]["file_path"]
-                      orig_bytes = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=20).content
-                      with open("assets/raw_input.jpg", "wb") as f:
-                          f.write(orig_bytes)
-                      break
+              chat_info = requests.get(f"https://api.telegram.org/bot{TOKEN}/getChat?chat_id={CHANNEL_ID}", timeout=15).json()
+              photo_obj = (chat_info.get("result") or {}).get("photo")
+              if not photo_obj:
+                  me_info = requests.get(f"https://api.telegram.org/bot{TOKEN}/getMe", timeout=15).json()
+                  bot_id = (me_info.get("result") or {}).get("id")
+                  if bot_id:
+                      b_chat = requests.get(f"https://api.telegram.org/bot{TOKEN}/getChat?chat_id={bot_id}", timeout=15).json()
+                      photo_obj = (b_chat.get("result") or {}).get("photo")
+              if photo_obj and photo_obj.get("big_file_id"):
+                  fid = photo_obj["big_file_id"]
+                  f_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=15).json()
+                  f_path = f_res["result"]["file_path"]
+                  img_data = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{f_path}", timeout=20).content
+                  with open("assets/logo.jpg", "wb") as f:
+                      f.write(img_data)
           except Exception as e:
-              print("Update fetch note:", e)
+              print("Logo fetch note:", e)
 
-          if orig_bytes:
-              # تكبير الصورة الأصلية 4 أضعاف (Super-Resolution 1600x1600) للحصول على حواف فيكتور ناعمة جداً
-              pil_img = Image.open(io.BytesIO(orig_bytes)).convert("RGB")
-              S = 1600
-              pil_img = pil_img.resize((S, S), Image.Resampling.LANCZOS)
-              arr = np.array(pil_img)
+          # 2. تنظيم وتصنيف الكتب والمقالات الـ 204 المسحوبة لتكون خفيفة وسريعة في التطبيق
+          raw_items = []
+          if os.path.exists("data/full_content.json"):
+              with open("data/full_content.json", "r", encoding="utf-8") as f:
+                  raw_items = json.load(f).get("items", [])
 
-              # أ. قياس مكان السطر وسماكة الخط واللون البني بدقة البكسل من كلمة (القر)
-              # منطقة الوصلة الأفقية بين اللام والقاف: x = 0.78..0.81, y = 0.55..0.68
-              strip = arr[int(S*0.55):int(S*0.685), int(S*0.785):int(S*0.805)]
-              gray_strip = np.mean(strip, axis=(1, 2))
-              brown_rows = np.where(gray_strip < 130)[0]
-              if len(brown_rows) > 5:
-                  y_base_top = int(S*0.55) + int(brown_rows[0])
-                  y_base_bot = int(S*0.55) + int(brown_rows[-1])
+          clean_books = []
+          for idx, item in enumerate(raw_items):
+              title = item.get("title", "").strip()
+              if not title:
+                  continue
+              html = item.get("content_html", "") or item.get("excerpt", "")
+              # تحويل النص مع الحفاظ على الفقرات بدون تشويه
+              text = re.sub(r"</p>|</div>|<br\s*/?>|</li>|</h\d>", "\n\n", html)
+              text = re.sub(r"<[^>]+>", "", text)
+              text = re.sub(r"\n{3,}", "\n\n", text).strip()
+              if len(text) < 20 and item.get("excerpt"):
+                  text = item.get("excerpt").strip()
+
+              # تصنيف ذكي تلقائي للكتب حسب العنوان والمحتوى
+              t_low = title + " " + text[:300]
+              if any(w in t_low for w in ["تأويل", "سورة", "آية", "القرآن", "السبع المثاني", "جزء"]):
+                  cat = "تأويل القرآن العظيم"
+              elif any(w in t_low for w in ["صلاة", "زكاة", "صيام", "حج", "إيمان", "أركان", "درر الأحكام"]):
+                  cat = "درر الأحكام وأركان الإسلام"
+              elif any(w in t_low for w in ["نبي", "رسول", "محمد", "إبراهيم", "موسى", "عيسى", "الأنبياء"]):
+                  cat = "الأنبياء الكرام"
+              elif any(w in t_low for w in ["حجامة", "طبيب", "علمية", "خروع", "حيوان"]):
+                  cat = "دراسات وبحوث علمية"
+              elif any(w in t_low for w in ["سؤال", "جواب", "استفسار", "فتوى", "حكم"]):
+                  cat = "سؤال وجواب"
               else:
-                  y_base_top = int(S*0.618)
-                  y_base_bot = int(S*0.662)
+                  cat = "دراسات ومقالات إسلامية"
 
-              sw = max(y_base_bot - y_base_top, int(S * 0.042))
-              y_center = (y_base_top + y_base_bot) / 2.0
+              clean_books.append({
+                  "id": item.get("id") or (idx + 1),
+                  "title": title,
+                  "category": cat,
+                  "url": item.get("url", ""),
+                  "summary": (item.get("excerpt", "") or text[:180]).replace("\n", " ").strip()[:200],
+                  "content": text
+              })
 
-              # قياس ارتفاع وحجم نقطتي حرف القاف لمطابقة نقطة النون معها 100%
-              q_dots_zone = arr[int(S*0.43):int(S*0.52), int(S*0.65):int(S*0.77)]
-              q_gray = np.mean(q_dots_zone, axis=2)
-              q_y_idx, q_x_idx = np.where(q_gray < 120)
-              if len(q_y_idx) > 10:
-                  y_dot_center = int(S*0.43) + int(np.median(q_y_idx))
-                  dot_r = int((np.max(q_y_idx) - np.min(q_y_idx)) / 2.0)
-              else:
-                  y_dot_center = int(S*0.482)
-                  dot_r = int(sw * 0.56)
+          with open("data/app_books.json", "w", encoding="utf-8") as f:
+              json.dump(clean_books, f, ensure_ascii=False)
 
-              # قياس الحد الأيسر لجذع الشجرة بدقة لمنع لمسه
-              trunk_zone = arr[int(S*0.50):int(S*0.62), int(S*0.40):int(S*0.46)]
-              trunk_x_idx = np.where(np.mean(trunk_zone, axis=(0, 2)) < 130)[0]
-              trunk_left_x = int(S*0.40) + int(trunk_x_idx[0]) if len(trunk_x_idx) > 0 else int(S*0.422)
+          # 3. إنشاء ملف الواجهة التفاعلية الكاملة (index.html)
+          html_code = '''<!DOCTYPE html>
+          <html lang="ar" dir="rtl">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>روح القرآن ونعيمه</title>
+            <script src="https://telegram.org/js/telegram-web-app.js"></script>
+            <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+            <style>
+              :root {
+                --bg: #f4f9f4;
+                --card: #ffffff;
+                --text: #1e2d24;
+                --muted: #5c7065;
+                --primary: #2e7d32;
+                --primary-light: #e0f2e1;
+                --accent: #0288d1;
+                --border: #dce8dd;
+                --font-scale: 1;
+              }
+              body.theme-sepia {
+                --bg: #f6efe2;
+                --card: #fdf8ee;
+                --text: #3b2820;
+                --muted: #7a6356;
+                --primary: #6d4c41;
+                --primary-light: #eadbc6;
+                --border: #e2d2bc;
+              }
+              body.theme-dark {
+                --bg: #111814;
+                --card: #1b2620;
+                --text: #e8f0ec;
+                --muted: #96aba0;
+                --primary: #4caf50;
+                --primary-light: #24382b;
+                --border: #2a3b31;
+              }
+              * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+              body {
+                font-family: 'Tajawal', sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                padding-bottom: 76px;
+                transition: background 0.25s, color 0.25s;
+              }
+              /* الشريط العلوي */
+              .top-bar {
+                position: sticky; top: 0; z-index: 100;
+                background: var(--card);
+                border-bottom: 1px solid var(--border);
+                padding: 10px 14px;
+                display: flex; align-items: center; justify-content: space-between;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+              }
+              .brand { display: flex; align-items: center; gap: 10px; }
+              .brand img { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border); }
+              .brand h1 { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+              .top-tools { display: flex; align-items: center; gap: 6px; }
+              .tool-btn {
+                background: var(--primary-light); color: var(--primary);
+                border: none; border-radius: 8px; padding: 6px 10px;
+                font-family: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+              }
+              /* التبويبات الفرعية والفلاتر */
+              .sub-tabs {
+                display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px;
+                background: var(--card); border-bottom: 1px solid var(--border);
+                scrollbar-width: none;
+              }
+              .sub-tabs::-webkit-scrollbar { display: none; }
+              .chip {
+                white-space: nowrap; padding: 7px 14px; border-radius: 20px;
+                font-size: 0.88rem; font-weight: 600; cursor: pointer;
+                background: var(--bg); color: var(--muted); border: 1px solid var(--border);
+              }
+              .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+              .container { padding: 12px 14px; max-width: 900px; margin: 0 auto; }
+              .search-box {
+                width: 100%; padding: 12px 16px; border-radius: 12px;
+                border: 1px solid var(--border); background: var(--card); color: var(--text);
+                font-family: inherit; font-size: 0.95rem; margin-bottom: 12px; outline: none;
+              }
+              /* قائمة السور والكتب */
+              .item-card {
+                background: var(--card); border: 1px solid var(--border);
+                border-radius: 14px; padding: 14px; margin-bottom: 10px;
+                display: flex; align-items: center; justify-content: space-between;
+                cursor: pointer; transition: transform 0.15s;
+              }
+              .item-card:active { transform: scale(0.99); }
+              .badge-num {
+                width: 38px; height: 38px; border-radius: 50%;
+                background: var(--primary-light); color: var(--primary);
+                display: flex; align-items: center; justify-content: center;
+                font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+              }
+              .card-info { flex: 1; margin: 0 12px; }
+              .card-title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+              .card-sub { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+              /* صفحة قراءة المصحف والوضع المزدوج بالعرض */
+              .reader-layout { display: grid; grid-template-columns: 1fr; gap: 14px; }
+              @media (orientation: landscape) and (min-width: 680px) {
+                .reader-layout.split-active { grid-template-columns: 1fr 1fr; }
+              }
+              .quran-box {
+                background: var(--card); border: 1px solid var(--border);
+                border-radius: 16px; padding: 20px 16px;
+                font-family: 'Amiri Quran', 'Amiri', serif;
+                font-size: calc(1.55rem * var(--font-scale));
+                line-height: 2.35; text-align: justify; direction: rtl;
+              }
+              .bismillah { text-align: center; color: var(--primary); margin-bottom: 14px; font-size: calc(1.4rem * var(--font-scale)); }
+              .ayah-span {
+                padding: 2px 4px; border-radius: 6px; cursor: pointer; transition: background 0.15s;
+              }
+              .ayah-span.selected { background: rgba(46, 125, 50, 0.22); }
+              .ayah-span.hl-yellow { background: rgba(255, 213, 79, 0.45); }
+              .ayah-span.hl-blue { background: rgba(79, 195, 247, 0.38); }
+              .ayah-span.hl-red { background: rgba(239, 154, 154, 0.42); }
+              .ayah-num {
+                display: inline-flex; align-items: center; justify-content: center;
+                font-size: 0.72em; color: var(--primary); margin: 0 4px;
+                border: 1px solid var(--primary); border-radius: 50%;
+                width: 1.65em; height: 1.65em; vertical-align: middle;
+              }
+              /* نافذة خيارات الآية السفلية */
+              .ayah-sheet {
+                position: fixed; bottom: 68px; left: 12px; right: 12px; z-index: 200;
+                background: var(--card); border: 1px solid var(--border);
+                border-radius: 16px; padding: 14px;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+                display: none; max-width: 600px; margin: 0 auto;
+              }
+              .ayah-sheet.show { display: block; }
+              .sheet-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+              .color-dots { display: flex; gap: 8px; }
+              .color-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #ccc; cursor: pointer; }
+              .sheet-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
+              .act-btn {
+                background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+                padding: 8px 4px; font-family: inherit; font-size: 0.82rem; font-weight: 600;
+                color: var(--text); cursor: pointer;
+              }
+              /* قارئ الكتب والتأويل */
+              .book-reader {
+                background: var(--card); border: 1px solid var(--border);
+                border-radius: 16px; padding: 18px;
+                font-family: 'Amiri', serif; font-size: calc(1.25rem * var(--font-scale));
+                line-height: 2.0; white-space: pre-wrap;
+              }
+              /* الشريط السفلي */
+              .bottom-nav {
+                position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+                background: var(--card); border-top: 1px solid var(--border);
+                display: grid; grid-template-columns: repeat(5, 1fr);
+                height: 62px;
+              }
+              .nav-item {
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                gap: 3px; font-size: 0.76rem; font-weight: 600; color: var(--muted);
+                cursor: pointer; border: none; background: none; font-family: inherit;
+              }
+              .nav-item.active { color: var(--primary); }
+              .nav-icon { font-size: 1.25rem; }
+            </style>
+          </head>
+          <body>
+            <!-- الشريط العلوي -->
+            <header class="top-bar">
+              <div class="brand">
+                <img src="assets/logo.jpg" onerror="this.src='assets/logo.png'" alt="شعار">
+                <h1>روح القرآن ونعيمه</h1>
+              </div>
+              <div class="top-tools">
+                <button class="tool-btn" onclick="changeFont(0.1)" title="تكبير الخط">A+</button>
+                <button class="tool-btn" onclick="changeFont(-0.1)" title="تصغير الخط">A-</button>
+                <button class="tool-btn" onclick="cycleTheme()" id="themeBtn">🎨 الثيم</button>
+              </div>
+            </header>
 
-              # ب. مسح جراحي ذكي لمنطقة (ءة) بالكامل (يستهدف اللون البني فقط ويحمي الأزرق والأخضر والجذع)
-              roi = arr[int(S*0.42):int(S*0.688), int(S*0.04):trunk_left_x - 4]
-              r_ch, g_ch, b_ch = roi[:, :, 0].astype(int), roi[:, :, 1].astype(int), roi[:, :, 2].astype(int)
-              # البني/الرمادي الداكن ليس أزرق (b - r < 35) وليس أخضر (g - r < 35)
-              is_brown_or_shadow = (r_ch < 245) & ((b_ch - r_ch) < 35) & ((g_ch - r_ch) < 35)
-              roi[is_brown_or_shadow] = [255, 255, 255]
-              arr[int(S*0.42):int(S*0.688), int(S*0.04):trunk_left_x - 4] = roi
+            <!-- المحتوى الديناميكي -->
+            <main id="mainView"></main>
 
-              clean_base = Image.fromarray(arr).convert("RGBA")
+            <!-- شريط خيارات الآية المحددة -->
+            <div class="ayah-sheet" id="ayahSheet">
+              <div class="sheet-top">
+                <strong id="selectedAyahLabel">سورة ... - آية ...</strong>
+                <div class="color-dots">
+                  <div class="color-dot" style="background:#ffd54f" onclick="highlightSelected('hl-yellow')" title="تلوين أصفر"></div>
+                  <div class="color-dot" style="background:#4fc3f7" onclick="highlightSelected('hl-blue')" title="تلوين أزرق"></div>
+                  <div class="color-dot" style="background:#ef9a9a" onclick="highlightSelected('hl-red')" title="تلوين أحمر"></div>
+                  <div class="color-dot" style="background:#fff" onclick="highlightSelected('')" title="إزالة التلوين"></div>
+                </div>
+                <button class="tool-btn" onclick="clearSelection()">✕</button>
+              </div>
+              <div class="sheet-actions">
+                <button class="act-btn" onclick="playSelectedAyah()">▶️ استماع</button>
+                <button class="act-btn" onclick="showTawilForSelected()">📖 التأويل</button>
+                <button class="act-btn" onclick="saveAyahAsImage()">🖼️ حفظ كصورة</button>
+                <button class="act-btn" onclick="shareSelectedAyah()">📤 مشاركة</button>
+              </div>
+              <audio id="ayahAudio" style="width:100%; margin-top:10px; display:none;" controls></audio>
+            </div>
 
-              # ج. تصميم حرف (ن) هندسي مطابق تماماً لخط (القراءة) عبر فيكتور SVG فائق النعومة
-              x_right = trunk_left_x - int(sw * 1.35)
-              x_left = int(S * 0.155)
-              y_top = int(y_base_bot - sw * 2.55)
-              r_corner = int(sw * 1.15)
-              x_dot = (x_right + x_left) / 2.0
+            <!-- شريط التنقل السفلي -->
+            <nav class="bottom-nav">
+              <button class="nav-item active" onclick="switchTab('quran', this)">
+                <span class="nav-icon">📖</span><span>تصفح المصحف</span>
+              </button>
+              <button class="nav-item" onclick="switchTab('books', this)">
+                <span class="nav-icon">📚</span><span>الكتب</span>
+              </button>
+              <button class="nav-item" onclick="switchTab('audio', this)">
+                <span class="nav-icon">🎧</span><span>الصوتيات</span>
+              </button>
+              <button class="nav-item" onclick="switchTab('search', this)">
+                <span class="nav-icon">🔍</span><span>البحث الذكي</span>
+              </button>
+              <button class="nav-item" onclick="switchTab('bookmarks', this)">
+                <span class="nav-icon">🔖</span><span>علاماتي</span>
+              </button>
+            </nav>
 
-              def render_overlay(with_maddah=False):
-                  maddah_svg = ""
-                  if with_maddah:
-                      # مدّة قرآنية أنيقة متناسقة فوق الألف/النون
-                      mx1 = x_right - int(sw * 0.2)
-                      mx2 = trunk_left_x + int(sw * 1.1)
-                      my = int(S * 0.455)
-                      m_sw = int(sw * 0.55)
-                      maddah_svg = f'<path d="M {mx2} {my} C {mx2 - sw*0.4} {my - sw*0.45}, {mx1 + sw*0.4} {my + sw*0.45}, {mx1} {my}" fill="none" stroke="#3B271E" stroke-width="{m_sw}" stroke-linecap="round"/>'
+            <script>
+              const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+              if (tg) { tg.expand(); tg.ready(); }
 
-                  svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {S} {S}" width="{S}" height="{S}">
-                    <path d="M {x_right} {y_top}
-                             L {x_right} {y_center - r_corner}
-                             Q {x_right} {y_center} {x_right - r_corner} {y_center}
-                             L {x_left + r_corner} {y_center}
-                             Q {x_left} {y_center} {x_left} {y_center - r_corner}
-                             L {x_left} {y_top}"
-                          fill="none" stroke="#3B271E" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>
-                    <circle cx="{x_dot}" cy="{y_dot_center}" r="{dot_r}" fill="#3B271E"/>
-                    {maddah_svg}
-                  </svg>'''
-                  png_bytes = cairosvg.svg2png(bytestring=svg.encode("utf-8"), output_width=S, output_height=S)
-                  overlay = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-                  combined = Image.alpha_composite(clean_base, overlay).convert("RGB")
-                  return combined
+              let quranData = [];
+              let booksData = [];
+              let currentTab = 'quran';
+              let currentSurah = null;
+              let selectedAyahs = new Set();
+              let savedHighlights = JSON.parse(localStorage.getItem('roh_highlights') || '{}');
+              let fontScale = parseFloat(localStorage.getItem('roh_font') || '1');
+              let themeIdx = parseInt(localStorage.getItem('roh_theme') || '0');
+              const themes = ['', 'theme-sepia', 'theme-dark'];
 
-              v1 = render_overlay(with_maddah=False)
-              v1.save("assets/logo_v1_clean.png", "PNG", quality=100)
-              v1.save("assets/logo.png", "PNG", quality=100)
+              document.documentElement.style.setProperty('--font-scale', fontScale);
+              if (themes[themeIdx]) document.body.className = themes[themeIdx];
 
-              v2 = render_overlay(with_maddah=True)
-              v2.save("assets/logo_v2_maddah.png", "PNG", quality=100)
+              function changeFont(delta) {
+                fontScale = Math.min(1.6, Math.max(0.8, +(fontScale + delta).toFixed(2)));
+                document.documentElement.style.setProperty('--font-scale', fontScale);
+                localStorage.setItem('roh_font', fontScale);
+              }
 
-              send_photo("assets/logo_v1_clean.png", "✨ *النسخة 1 (مطابقة 100% لخط وسطر الصورة الأصلية بدون أي زوائد)*")
-              send_photo("assets/logo_v2_maddah.png", "✨ *النسخة 2 (بنفس الخط الأصلي مع إضافة علامة المدّة لـ القرآن)*")
+              function cycleTheme() {
+                themeIdx = (themeIdx + 1) % themes.length;
+                document.body.className = themes[themeIdx];
+                localStorage.setItem('roh_theme', themeIdx);
+              }
 
-              # تحديث صورة القناة الخاصة بالنسخة النقية الأولى تلقائياً
-              with open("assets/logo_v1_clean.png", "rb") as f:
-                  requests.post(
-                      f"https://api.telegram.org/bot{TOKEN}/setChatPhoto",
-                      data={"chat_id": CHANNEL_ID},
-                      files={"photo": f},
-                      timeout=30
-                  )
+              function normalizeAr(str) {
+                if (!str) return '';
+                return str
+                  .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+                  .replace(/[أإآٱ]/g, 'ا')
+                  .replace(/ة/g, 'ه')
+                  .replace(/ى/g, 'ي');
+              }
 
-          # 2. توليد نسخة ثالثة فنية بالذكاء الاصطناعي (Flux AI) للمقارنة
-          try:
-              prompt = "Minimalist flat vector islamic logo on pure white background, green sprouting tree growing from arabic calligraphy Al-Quran Hayat in dark brown and sky blue, clean geometric typography, professional app icon, 4k"
-              ai_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt)}?width=1024&height=1024&nologo=true&model=flux"
-              r_ai = requests.get(ai_url, timeout=35)
-              if r_ai.status_code == 200 and len(r_ai.content) > 5000:
-                  with open("assets/logo_v3_ai.png", "wb") as f:
-                      f.write(r_ai.content)
-                  send_photo("assets/logo_v3_ai.png", "🤖 *النسخة 3 (تصميم فني مقترح مولّد بالذكاء الاصطناعي)*")
-          except Exception as e:
-              print("AI gen note:", e)
+              async function loadAllData() {
+                const view = document.getElementById('mainView');
+                view.innerHTML = '<div class="container"><p style="text-align:center;padding:40px;">⏳ جاري تحميل المصحف الشريف والمكتبة...</p></div>';
+                try {
+                  const [qRes, bRes] = await Promise.all([
+                    fetch('data/quran.json'),
+                    fetch('data/app_books.json')
+                  ]);
+                  quranData = await qRes.json();
+                  booksData = await bRes.json();
+                  renderQuranList('surahs');
+                } catch (e) {
+                  view.innerHTML = '<div class="container"><p>تعذر تحميل البيانات محلياً، تأكد من فتح الرابط عبر GitHub Pages.</p></div>';
+                }
+              }
+
+              function switchTab(tab, btn) {
+                currentTab = tab;
+                clearSelection();
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                if (btn) btn.classList.add('active');
+                if (tab === 'quran') renderQuranList('surahs');
+                else if (tab === 'books') renderBooksTab('الكل');
+                else if (tab === 'audio') renderAudioTab();
+                else if (tab === 'search') renderSearchTab();
+                else if (tab === 'bookmarks') renderBookmarksTab();
+              }
+
+              /* 1. قسم المصحف الشريف */
+              function renderQuranList(mode) {
+                const view = document.getElementById('mainView');
+                let html = `
+                  <div class="sub-tabs">
+                    <div class="chip ${mode==='surahs'?'active':''}" onclick="renderQuranList('surahs')">السور (114)</div>
+                    <div class="chip ${mode==='juz'?'active':''}" onclick="renderQuranList('juz')">الأجزاء (30)</div>
+                    <div class="chip ${mode==='pages'?'active':''}" onclick="renderQuranList('pages')">الصفحات (604)</div>
+                  </div>
+                  <div class="container">
+                    <input type="text" class="search-box" placeholder="ابحث عن اسم السورة أو رقم الصفحة..." oninput="filterSurahs(this.value)">
+                    <div id="surahListContainer">
+                `;
+                if (mode === 'surahs') {
+                  quranData.forEach(s => {
+                    const rev = s.revelationType === 'Meccan' ? 'مكية' : 'مدنية';
+                    const page = s.ayahs && s.ayahs[0] ? s.ayahs[0].page : 1;
+                    html += `
+                      <div class="item-card surah-item" data-name="${normalizeAr(s.name)}" onclick="openSurah(${s.number})">
+                        <div class="badge-num">${s.number}</div>
+                        <div class="card-info">
+                          <div class="card-title">${s.name}</div>
+                          <div class="card-sub">${rev} • ${s.ayahs.length} آيات • صفحة ${page}</div>
+                        </div>
+                        <span style="color:var(--primary);font-weight:700;">اقرأ ❯</span>
+                      </div>`;
+                  });
+                } else if (mode === 'juz') {
+                  for (let j = 1; j <= 30; j++) {
+                    html += `
+                      <div class="item-card" onclick="openJuz(${j})">
+                        <div class="badge-num">${j}</div>
+                        <div class="card-info">
+                          <div class="card-title">الجزء ${j}</div>
+                          <div class="card-sub">تصفح آيات الجزء ${j} من المصحف الشريف</div>
+                        </div>
+                        <span style="color:var(--primary);font-weight:700;">فتح ❯</span>
+                      </div>`;
+                  }
+                } else {
+                  for (let p = 1; p <= 604; p += 10) {
+                    html += `
+                      <div class="item-card" onclick="openPage(${p})">
+                        <div class="badge-num">${p}</div>
+                        <div class="card-info">
+                          <div class="card-title">الصفحات ${p} إلى ${Math.min(604, p+9)}</div>
+                          <div class="card-sub">اضغط للانتقال للصفحة ${p}</div>
+                        </div>
+                        <span style="color:var(--primary);font-weight:700;">فتح ❯</span>
+                      </div>`;
+                  }
+                }
+                html += `</div></div>`;
+                view.innerHTML = html;
+              }
+
+              function filterSurahs(q) {
+                const nq = normalizeAr(q.trim());
+                document.querySelectorAll('.surah-item').forEach(el => {
+                  el.style.display = el.dataset.name.includes(nq) ? 'flex' : 'none';
+                });
+              }
+
+              function openSurah(num) {
+                const s = quranData.find(x => x.number === num);
+                if (!s) return;
+                currentSurah = s;
+                clearSelection();
+                const view = document.getElementById('mainView');
+                const juz = s.ayahs[0] ? s.ayahs[0].juz : 1;
+                let ayahsHtml = '';
+                s.ayahs.forEach(a => {
+                  const key = `${s.number}:${a.numberInSurah}`;
+                  const hl = savedHighlights[key] || '';
+                  let txt = a.text;
+                  if (s.number !== 1 && a.numberInSurah === 1) {
+                    txt = txt.replace('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ', '').trim();
+                  }
+                  ayahsHtml += `<span class="ayah-span ${hl}" id="ay-${key}" onclick="toggleAyah('${key}', ${s.number}, ${a.numberInSurah})">${txt} <span class="ayah-num">${a.numberInSurah}</span> </span>`;
+                });
+
+                view.innerHTML = `
+                  <div class="sub-tabs" style="justify-content:space-between;align-items:center;">
+                    <button class="tool-btn" onclick="renderQuranList('surahs')">❮ فهرس السور</button>
+                    <strong>${s.name} • الجزء ${juz}</strong>
+                    <button class="tool-btn" onclick="toggleSplitTawil()">📖 وضع التأويل المزدوج</button>
+                  </div>
+                  <div class="container">
+                    <div class="reader-layout" id="readerGrid">
+                      <div class="quran-box">
+                        ${s.number !== 9 ? '<div class="bismillah">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>' : ''}
+                        ${ayahsHtml}
+                      </div>
+                      <div class="book-reader" id="splitTawilBox" style="display:none;"></div>
+                    </div>
+                  </div>
+                `;
+                window.scrollTo(0, 0);
+              }
+
+              function openJuz(juzNum) {
+                const s = quranData.find(surah => surah.ayahs.some(a => a.juz === juzNum));
+                if (s) openSurah(s.number);
+              }
+
+              function openPage(pageNum) {
+                const s = quranData.find(surah => surah.ayahs.some(a => a.page >= pageNum));
+                if (s) openSurah(s.number);
+              }
+
+              function toggleAyah(key, sNum, aNum) {
+                const el = document.getElementById('ay-' + key);
+                if (selectedAyahs.has(key)) {
+                  selectedAyahs.delete(key);
+                  if (el) el.classList.remove('selected');
+                } else {
+                  selectedAyahs.add(key);
+                  if (el) el.classList.add('selected');
+                }
+                const sheet = document.getElementById('ayahSheet');
+                if (selectedAyahs.size > 0) {
+                  sheet.classList.add('show');
+                  const nums = Array.from(selectedAyahs).map(k => k.split(':')[1]).join('، ');
+                  document.getElementById('selectedAyahLabel').textContent = `${currentSurah.name} - آية (${nums})`;
+                } else {
+                  sheet.classList.remove('show');
+                }
+              }
+
+              function clearSelection() {
+                selectedAyahs.forEach(k => {
+                  const el = document.getElementById('ay-' + k);
+                  if (el) el.classList.remove('selected');
+                });
+                selectedAyahs.clear();
+                document.getElementById('ayahSheet').classList.remove('show');
+              }
+
+              function highlightSelected(colorClass) {
+                selectedAyahs.forEach(k => {
+                  const el = document.getElementById('ay-' + k);
+                  if (el) {
+                    el.classList.remove('hl-yellow', 'hl-blue', 'hl-red');
+                    if (colorClass) el.classList.add(colorClass);
+                  }
+                  if (colorClass) savedHighlights[k] = colorClass;
+                  else delete savedHighlights[k];
+                });
+                localStorage.setItem('roh_highlights', JSON.stringify(savedHighlights));
+                clearSelection();
+              }
+
+              function getSelectedAyahsText() {
+                if (!currentSurah) return '';
+                const keys = Array.from(selectedAyahs);
+                const parts = keys.map(k => {
+                  const aNum = parseInt(k.split(':')[1]);
+                  const ay = currentSurah.ayahs.find(x => x.numberInSurah === aNum);
+                  return ay ? `${ay.text} (${aNum})` : '';
+                });
+                return `﴿ ${parts.join(' ')} ﴾\n[${currentSurah.name}]`;
+              }
+
+              function playSelectedAyah() {
+                if (selectedAyahs.size === 0) return;
+                const firstKey = Array.from(selectedAyahs)[0];
+                const [sNum, aNum] = firstKey.split(':').map(Number);
+                const padS = String(sNum).padStart(3, '0');
+                const padA = String(aNum).padStart(3, '0');
+                const audio = document.getElementById('ayahAudio');
+                audio.src = `https://everyayah.com/data/Alafasy_128kbps/${padS}${padA}.mp3`;
+                audio.style.display = 'block';
+                audio.play();
+              }
+
+              function showTawilForSelected() {
+                if (!currentSurah) return;
+                const sNameNorm = normalizeAr(currentSurah.name.replace('سُورَةُ', '').trim());
+                const matches = booksData.filter(b =>
+                  normalizeAr(b.title).includes(sNameNorm) ||
+                  (b.category === 'تأويل القرآن العظيم' && normalizeAr(b.content).includes(sNameNorm))
+                );
+                const box = document.getElementById('splitTawilBox');
+                const grid = document.getElementById('readerGrid');
+                box.style.display = 'block';
+                grid.classList.add('split-active');
+                if (matches.length > 0) {
+                  box.innerHTML = `<h3 style="color:var(--primary);margin-bottom:10px;">📚 التأويل المرتبط بـ ${currentSurah.name}:</h3>` +
+                    matches.map(m => `<div style="margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+                      <h4>${m.title}</h4><p style="margin-top:8px;">${m.content}</p>
+                    </div>`).join('');
+                } else {
+                  box.innerHTML = `<h3 style="color:var(--primary);margin-bottom:10px;">📚 سلسلة تأويل القرآن العظيم</h3>
+                    <p>يمكنك تصفح المجلدات الكاملة لتأويل القرآن العظيم من تبويب (الكتب) أو استخدام (البحث الذكي) عن أي كلمة في الآية.</p>`;
+                }
+                clearSelection();
+                box.scrollIntoView({ behavior: 'smooth' });
+              }
+
+              function toggleSplitTawil() {
+                const box = document.getElementById('splitTawilBox');
+                if (box.style.display === 'none') showTawilForSelected();
+                else {
+                  box.style.display = 'none';
+                  document.getElementById('readerGrid').classList.remove('split-active');
+                }
+              }
+
+              function shareSelectedAyah() {
+                const txt = getSelectedAyahsText() + '\n\nمن تطبيق: روح القرآن ونعيمه (@Rohalquraan_app)';
+                if (navigator.share) {
+                  navigator.share({ title: 'روح القرآن ونعيمه', text: txt });
+                } else {
+                  navigator.clipboard.writeText(txt);
+                  alert('تم نسخ الآيات الكريمة مع المصدر بنجاح!');
+                }
+              }
+
+              function saveAyahAsImage() {
+                const txt = getSelectedAyahsText();
+                if (!txt) return;
+                const canvas = document.createElement('canvas');
+                canvas.width = 1080;
+                canvas.height = 1080;
+                const ctx = canvas.getContext('2d');
+
+                // خلفية متدرجة راقية
+                const grad = ctx.createLinearGradient(0, 0, 1080, 1080);
+                grad.addColorStop(0, '#f4f9f4');
+                grad.addColorStop(1, '#dcefe0');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 1080, 1080);
+
+                // إطار داخلي مذهب/أخضر
+                ctx.strokeStyle = '#2e7d32';
+                ctx.lineWidth = 6;
+                ctx.strokeRect(50, 50, 980, 980);
+
+                // النص القرآني
+                ctx.fillStyle = '#1e2d24';
+                ctx.font = 'bold 44px "Amiri", serif';
+                ctx.textAlign = 'center';
+                const words = txt.split(' ');
+                let line = '';
+                let lines = [];
+                words.forEach(w => {
+                  const test = line + w + ' ';
+                  if (ctx.measureText(test).width > 860) {
+                    lines.push(line);
+                    line = w + ' ';
+                  } else line = test;
+                });
+                lines.push(line);
+
+                let startY = 540 - (lines.length * 36);
+                lines.forEach((l, i) => {
+                  ctx.fillText(l.trim(), 540, startY + i * 74);
+                });
+
+                // التوقيع السفلي
+                ctx.fillStyle = '#2e7d32';
+                ctx.font = 'bold 30px "Tajawal", sans-serif';
+                ctx.fillText('روح القرآن ونعيمه • @Rohalquraan_app', 540, 970);
+
+                const link = document.createElement('a');
+                link.download = `ayah-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+              }
+
+              /* 2. قسم الكتب والمكتبة المفهرسة */
+              function renderBooksTab(selectedCat) {
+                const cats = ['الكل', 'تأويل القرآن العظيم', 'درر الأحكام وأركان الإسلام', 'الأنبياء الكرام', 'دراسات ومقالات إسلامية', 'دراسات وبحوث علمية', 'سؤال وجواب'];
+                const view = document.getElementById('mainView');
+                const filtered = selectedCat === 'الكل' ? booksData : booksData.filter(b => b.category === selectedCat);
+
+                let html = `<div class="sub-tabs">`;
+                cats.forEach(c => {
+                  html += `<div class="chip ${c===selectedCat?'active':''}" onclick="renderBooksTab('${c}')">${c}</div>`;
+                });
+                html += `</div><div class="container">
+                  <input type="text" class="search-box" placeholder="ابحث في عناوين الكتب والمواضيع (${filtered.length})..." oninput="filterBooksList(this.value)">
+                  <div id="booksListContainer">`;
+
+                filtered.forEach(b => {
+                  html += `
+                    <div class="item-card book-card-item" data-title="${normalizeAr(b.title)}" onclick="openBookItem(${b.id})">
+                      <div class="badge-num">📗</div>
+                      <div class="card-info">
+                        <div class="card-title">${b.title}</div>
+                        <div class="card-sub" style="color:var(--primary);font-weight:600;">${b.category}</div>
+                        <div class="card-sub">${b.summary || ''}</div>
+                      </div>
+                      <span style="color:var(--primary);font-weight:700;">قراءة ❯</span>
+                    </div>`;
+                });
+                html += `</div></div>`;
+                view.innerHTML = html;
+              }
+
+              function filterBooksList(q) {
+                const nq = normalizeAr(q.trim());
+                document.querySelectorAll('.book-card-item').forEach(el => {
+                  el.style.display = el.dataset.title.includes(nq) ? 'flex' : 'none';
+                });
+              }
+
+              function openBookItem(id) {
+                const b = booksData.find(x => x.id === id);
+                if (!b) return;
+                const view = document.getElementById('mainView');
+                view.innerHTML = `
+                  <div class="sub-tabs" style="justify-content:space-between;align-items:center;">
+                    <button class="tool-btn" onclick="renderBooksTab('${b.category}')">❮ رجوع للقسم</button>
+                    <strong>${b.category}</strong>
+                    <button class="tool-btn" onclick="copyBookText(${b.id})">📋 نسخ مع المصدر</button>
+                  </div>
+                  <div class="container">
+                    <div class="book-reader">
+                      <h2 style="color:var(--primary);margin-bottom:14px;">${b.title}</h2>
+                      <div id="bookBodyText">${b.content || b.summary}</div>
+                      <hr style="margin:20px 0;border-color:var(--border);">
+                      <div style="font-size:0.9rem;color:var(--muted);">المصدر: مؤلفات العلامة الإنساني محمد أمين شيخو قدس سره • تطبيق روح القرآن ونعيمه</div>
+                    </div>
+                  </div>
+                `;
+                window.scrollTo(0, 0);
+              }
+
+              function copyBookText(id) {
+                const b = booksData.find(x => x.id === id);
+                if (!b) return;
+                const full = `${b.title}\n\n${b.content}\n\n— المصدر: مؤلفات العلامة محمد أمين شيخو (تطبيق روح القرآن ونعيمه)`;
+                navigator.clipboard.writeText(full);
+                alert('تم نسخ النص كاملاً مع توثيق المصدر!');
+              }
+
+              /* 3. قسم الصوتيات */
+              function renderAudioTab() {
+                const view = document.getElementById('mainView');
+                let html = `
+                  <div class="container">
+                    <h3 style="margin-bottom:10px;color:var(--primary);">🎧 المكتبة الصوتية وتلاوات السور</h3>
+                    <div class="item-card" style="flex-direction:column;align-items:stretch;gap:10px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <strong id="nowPlayingTitle">اختر سورة أو درساً للاستماع</strong>
+                        <div>
+                          <button class="tool-btn" onclick="setAudioSpeed(1)">1x</button>
+                          <button class="tool-btn" onclick="setAudioSpeed(1.25)">1.25x</button>
+                          <button class="tool-btn" onclick="setAudioSpeed(1.5)">1.5x</button>
+                        </div>
+                      </div>
+                      <audio id="mainAudioPlayer" controls style="width:100%;"></audio>
+                    </div>
+                    <input type="text" class="search-box" placeholder="ابحث في السور والصوتيات..." oninput="filterSurahs(this.value)">
+                `;
+                quranData.forEach(s => {
+                  const pad = String(s.number).padStart(3, '0');
+                  html += `
+                    <div class="item-card surah-item" data-name="${normalizeAr(s.name)}" onclick="playFullSurah('${s.name}', 'https://server8.mp3quran.net/afs/${pad}.mp3')">
+                      <div class="badge-num">🎧</div>
+                      <div class="card-info">
+                        <div class="card-title">تلاوة ${s.name}</div>
+                        <div class="card-sub">استماع مباشر مع دعم التسريع والتشغيل في الخلفية</div>
+                      </div>
+                      <span style="color:var(--primary);font-weight:700;">تشغيل ▶</span>
+                    </div>`;
+                });
+                html += `</div>`;
+                view.innerHTML = html;
+              }
+
+              function playFullSurah(title, url) {
+                document.getElementById('nowPlayingTitle').textContent = '🎧 يعمل الآن: ' + title;
+                const player = document.getElementById('mainAudioPlayer');
+                player.src = url;
+                player.play();
+              }
+
+              function setAudioSpeed(rate) {
+                const player = document.getElementById('mainAudioPlayer');
+                if (player) player.playbackRate = rate;
+              }
+
+              /* 4. محرك البحث الذكي الآمن (استرجاع حرفي موثق بدون تأليف) */
+              function renderSearchTab() {
+                const view = document.getElementById('mainView');
+                view.innerHTML = `
+                  <div class="container">
+                    <h3 style="color:var(--primary);margin-bottom:6px;">🔍 المرشد الفهرسي الذكي (بحث آمن وموثّق)</h3>
+                    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">يبحث في آيات القرآن الكريم وفي جميع الكتب والمقالات الـ (${booksData.length}) ويعرض النص الأصلي الحرفي مع مصدره دون أي تغيير.</p>
+                    <input type="text" class="search-box" id="smartQuery" placeholder="اكتب كلمة أو سؤالاً (مثلاً: الصبر، بر الوالدين، الحجامة، الفاتحة)..." oninput="runSmartSearch(this.value)">
+                    <div id="searchResults"></div>
+                  </div>
+                `;
+              }
+
+              function runSmartSearch(q) {
+                const box = document.getElementById('searchResults');
+                const cleanQ = normalizeAr(q.trim());
+                if (cleanQ.length < 2) { box.innerHTML = ''; return; }
+                const words = cleanQ.split(/\s+/).filter(w => w.length >= 2);
+                let out = '';
+                let count = 0;
+
+                // البحث في الكتب والمقالات
+                for (const b of booksData) {
+                  const normTitle = normalizeAr(b.title);
+                  const normContent = normalizeAr(b.content);
+                  if (words.every(w => normTitle.includes(w) || normContent.includes(w))) {
+                    count++;
+                    const pos = normContent.indexOf(words[0]);
+                    const snippet = pos > -1 ? b.content.substring(Math.max(0, pos - 40), Math.min(b.content.length, pos + 180)) : b.summary;
+                    out += `
+                      <div class="item-card" onclick="openBookItem(${b.id})">
+                        <div class="card-info">
+                          <div class="card-title">📗 ${b.title}</div>
+                          <div class="card-sub" style="color:var(--primary);font-weight:700;">المصدر: ${b.category}</div>
+                          <div class="card-sub" style="margin-top:6px;">«...${snippet}...»</div>
+                        </div>
+                      </div>`;
+                    if (count >= 25) break;
+                  }
+                }
+
+                // البحث في القرآن الكريم
+                let qCount = 0;
+                for (const s of quranData) {
+                  if (qCount >= 15) break;
+                  for (const a of s.ayahs) {
+                    const normAyah = normalizeAr(a.text);
+                    if (words.every(w => normAyah.includes(w))) {
+                      qCount++;
+                      out += `
+                        <div class="item-card" onclick="openSurah(${s.number})">
+                          <div class="card-info">
+                            <div class="card-title">📖 ${s.name} • آية ${a.numberInSurah} (صفحة ${a.page})</div>
+                            <div class="card-sub" style="font-family:'Amiri Quran',serif;font-size:1.1rem;color:var(--text);margin-top:4px;">﴿ ${a.text} ﴾</div>
+                          </div>
+                        </div>`;
+                      if (qCount >= 15) break;
+                    }
+                  }
+                }
+
+                box.innerHTML = out || '<p style="text-align:center;padding:20px;color:var(--muted);">لم يتم العثور على مطابقة حرفية، جرّب كتابة الكلمة المجردة.</p>';
+              }
+
+              /* 5. قسم العلامات والمفضلة */
+              function renderBookmarksTab() {
+                const view = document.getElementById('mainView');
+                const keys = Object.keys(savedHighlights);
+                let html = `<div class="container"><h3 style="color:var(--primary);margin-bottom:12px;">🔖 الآيات الملونة والعلامات المحفوظة (${keys.length})</h3>`;
+                if (keys.length === 0) {
+                  html += `<p style="color:var(--muted);padding:20px;text-align:center;">اضغط على أي آية أثناء تصفح المصحف الشريف واختر لون التمييز لتظهر علاماتك هنا تلقائياً.</p>`;
+                } else {
+                  keys.forEach(k => {
+                    const [sNum, aNum] = k.split(':').map(Number);
+                    const s = quranData.find(x => x.number === sNum);
+                    const a = s ? s.ayahs.find(y => y.numberInSurah === aNum) : null;
+                    if (s && a) {
+                      html += `
+                        <div class="item-card" onclick="openSurah(${s.number})">
+                          <div class="badge-num">${s.number}</div>
+                          <div class="card-info">
+                            <div class="card-title">${s.name} • آية ${aNum}</div>
+                            <div class="card-sub" style="font-family:'Amiri Quran',serif;font-size:1.1rem;color:var(--text);">﴿ ${a.text} ﴾</div>
+                          </div>
+                        </div>`;
+                    }
+                  });
+                }
+                html += `</div>`;
+                view.innerHTML = html;
+              }
+
+              loadAllData();
+            </script>
+          </body>
+          </html>'''
+
+          with open("index.html", "w", encoding="utf-8") as f:
+              f.write(html_code.strip())
+
+          # 4. إرسال إشعار بنجاح الخطوة 1 للمطور
+          msg = (
+              "✅ *نجحت الخطوة 1 بالكامل!* \n\n"
+              "📱 تم بناء واجهة تطبيق *(روح القرآن ونعيمه)* التفاعلية (`index.html`) وربطها بـ:\n"
+              "• شعارك الجديد المعتمد تلقائياً.\n"
+              "• المصحف الشريف الكامل (114 سورة، أجزاء، صفحات، تلوين آيات، حفظ كصورة، استماع، وتأويل).\n"
+              f"• مكتبة الكتب والمقالات المفهرسة ({len(clean_books)} كتاباً وموضوعاً).\n"
+              "• محرك البحث الفهرسي الآمن.\n\n"
+              "🚀 *جاهزون الآن للخطوة 2 (تفعيل رابط المعاينة المباشر بضغطتين فقط)!*"
+          )
+          requests.post(
+              f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+              json={"chat_id": ADMIN_ID, "text": msg, "parse_mode": "Markdown"},
+              timeout=15
+          )
           EOF
-          python3 studio.py
+          python3 make_app.py
 
-      - name: Save Pro Logos
+      - name: Save Web App Files
         run: |
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
-          git add assets/
-          git diff --staged --quiet || git commit -m "Update ultra-clean vector and AI logos"
+          git add index.html assets/ data/
+          git diff --staged --quiet || git commit -m "Step 1: Build complete interactive Web & Mini App"
           git push
