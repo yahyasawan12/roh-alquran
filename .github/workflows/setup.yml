@@ -1,4 +1,4 @@
-name: Cloud APK & Cart Books Extractor
+name: Unpack 15MB APK & Extract Databases
 
 on:
   push:
@@ -7,37 +7,37 @@ on:
   workflow_dispatch:
 
 jobs:
-  extract-app-data:
+  unpack-apk:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install tools
-        run: pip install requests beautifulsoup4 lxml cloudscraper
+      - name: Install Python & Telethon
+        run: pip install requests telethon
 
-      - name: Extract Cart Downloads & APK Structure
+      - name: Fetch APK from Bot & Deep Inspect
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
         run: |
-          cat << 'EOF' > cloud_extractor.py
-          import os, re, json, zipfile
-          import requests, cloudscraper
-          from bs4 import BeautifulSoup
-          from urllib.parse import urljoin, unquote
+          cat << 'EOF' > unpack_bot_apk.py
+          import os, re, json, zipfile, sqlite3, asyncio
+          import requests
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
-          PKG = "com.aminsheikho.alaminlibrary"
-          scraper = cloudscraper.create_scraper()
 
           def tg_msg(text):
-              requests.post(
+              r = requests.post(
                   f"https://api.telegram.org/bot{TOKEN}/sendMessage",
                   json={"chat_id": ADMIN_ID, "text": text, "parse_mode": "Markdown"},
                   timeout=15
               )
+              try:
+                  return r.json().get("result", {}).get("message_id")
+              except Exception:
+                  return None
 
           def tg_doc(path, caption):
               with open(path, "rb") as f:
@@ -48,113 +48,153 @@ jobs:
                       timeout=30
                   )
 
-          tg_msg("⏳ *بدأ السيرفر الآن بفحص روابط التحميل المخفية وسحب بيانات الحزمة...*")
+          # ضمان تفعيل قراءة الرسائل بدون تعارض
+          requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=false", timeout=10)
+
+          apk_path = "uploaded_app.apk"
+          downloaded = False
+          doc_meta = {}
+
+          # 1. البحث المباشر في التحديثات الأخيرة للبوت
+          up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?limit=50", timeout=20).json()
+          for item in reversed(up.get("result", [])):
+              msg = item.get("message") or item.get("channel_post") or {}
+              doc = msg.get("document")
+              if doc:
+                  doc_meta = doc
+                  fid = doc.get("file_id")
+                  f_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=20).json()
+                  if f_res.get("ok"):
+                      fpath = f_res["result"]["file_path"]
+                      data = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=120).content
+                      with open(apk_path, "wb") as f:
+                          f.write(data)
+                      downloaded = True
+                      break
+
+          sent_id = tg_msg("🔍 *تم الاتصال بالبوت.. جاري سحب ملف التطبيق (15MB) وتفكيك قواعد البيانات والروابط...*")
+
+          # 2. خطة بديلة تلقائية عبر Telethon إذا لم يظهر الملف في getUpdates
+          if not downloaded and sent_id:
+              async def fetch_recent_apk():
+                  from telethon import TelegramClient
+                  client = TelegramClient("bot_session", 6, "eb06d4abfb49dc3eeb1aeb98ae0f581e")
+                  await client.start(bot_token=TOKEN)
+                  ids_to_check = list(range(max(1, int(sent_id) - 30), int(sent_id)))
+                  msgs = await client.get_messages(int(ADMIN_ID), ids=ids_to_check)
+                  for m in reversed(msgs):
+                      if m and m.document:
+                          doc_meta["mime_type"] = getattr(m.document, "mime_type", "")
+                          doc_meta["size"] = getattr(m.document, "size", 0)
+                          await m.download_media(file=apk_path)
+                          break
+                  await client.disconnect()
+              try:
+                  asyncio.run(fetch_recent_apk())
+                  if os.path.exists(apk_path) and os.path.getsize(apk_path) > 10000:
+                      downloaded = True
+              except Exception as e:
+                  doc_meta["telethon_fallback_error"] = str(e)
 
           report = {
-              "apk_found": False,
-              "apk_source": "",
-              "apk_files": [],
-              "discovered_apis": [],
-              "cart_and_download_inspect": [],
-              "raw_shortcodes_found": []
+              "apk_downloaded": downloaded,
+              "apk_size_bytes": os.path.getsize(apk_path) if os.path.exists(apk_path) else 0,
+              "document_meta": doc_meta,
+              "all_files_count": 0,
+              "interesting_files": [],
+              "sqlite_databases": {},
+              "json_files_preview": {},
+              "discovered_urls": []
           }
 
-          # 1. فحص محتوى الكود الخام للمنتجات (لماذا ظهر [box type="download"] في الكتب؟)
-          try:
-              r_prod = scraper.get("https://www.amin-sheikho.com/wp-json/wp/v2/product?per_page=15", timeout=20)
-              if r_prod.status_code == 200:
-                  for p in r_prod.json()[:8]:
-                      title = (p.get("title") or {}).get("rendered", "")
-                      content_html = (p.get("content") or {}).get("rendered", "")
-                      link = p.get("link", "")
-                      soup_c = BeautifulSoup(content_html, "lxml")
-                      links_in_content = [a.get("href") for a in soup_c.find_all("a", href=True)]
-                      report["raw_shortcodes_found"].append({
-                          "title": title,
-                          "url": link,
-                          "links_inside_content": links_in_content,
-                          "html_sample": content_html[:600]
-                      })
-          except Exception as e:
-              report["wp_product_error"] = str(e)
+          os.makedirs("data/extracted", exist_ok=True)
 
-          # 2. فحص أزرار (add-to-cart) وروابط التحميل المباشرة داخل صفحات الكتب
-          try:
-              test_urls = [item["url"] for item in report["raw_shortcodes_found"][:4] if item.get("url")]
-              for u in test_urls:
-                  page_res = scraper.get(u, timeout=15)
-                  soup = BeautifulSoup(page_res.text, "lxml")
-                  dl_elements = []
-                  for a in soup.find_all("a", href=True):
-                      href = a["href"]
-                      txt = a.get_text(strip=True)
-                      if any(k in href.lower() or k in txt for k in ["add-to-cart", "download", "epub", "pdf", "mp3", "سلة", "تحميل", "صيغ"]):
-                          dl_elements.append({"text": txt, "href": href})
-
-                  # تجربة تتبع أول رابط add-to-cart لمعرفة ماذا يعطي السيرفر
-                  cart_result = ""
-                  for el in dl_elements:
-                      if "add-to-cart=" in el["href"]:
-                          cart_url = urljoin(u, el["href"])
-                          c_resp = scraper.get(cart_url, timeout=15)
-                          c_soup = BeautifulSoup(c_resp.text, "lxml")
-                          c_links = [ca["href"] for ca in c_soup.find_all("a", href=True) if any(x in ca["href"].lower() for x in ["checkout", "download", "epub", "pdf", "cart"])]
-                          cart_result = {"tested_url": cart_url, "result_links": c_links[:10]}
-                          break
-
-                  report["cart_and_download_inspect"].append({
-                      "page": u,
-                      "buttons": dl_elements[:15],
-                      "cart_Simulation": cart_result
-                  })
-          except Exception as e:
-              report["cart_error"] = str(e)
-
-          # 3. محاولة سحب معلومات وحزمة التطبيق من Aptoide API
-          apk_path = "alamin.apk"
-          try:
-              apt_url = f"https://ws75.aptoide.com/api/7/app/get/package_name={PKG}"
-              r = requests.get(apt_url, timeout=15)
-              if r.status_code == 200:
-                  data = r.json()
-                  dl_url = (((data.get("nodes") or {}).get("meta") or {}).get("data") or {}).get("file", {}).get("path")
-                  if dl_url:
-                      report["apk_source"] = dl_url
-                      apk_bin = requests.get(dl_url, timeout=60).content
-                      with open(apk_path, "wb") as f:
-                          f.write(apk_bin)
-                      report["apk_found"] = True
-          except Exception as e:
-              report["aptoide_note"] = str(e)
-
-          if report["apk_found"] and os.path.exists(apk_path) and zipfile.is_zipfile(apk_path):
-              urls_found = set()
+          if downloaded and os.path.exists(apk_path) and zipfile.is_zipfile(apk_path):
+              urls = set()
               with zipfile.ZipFile(apk_path, "r") as z:
-                  for name in z.namelist():
-                      if any(k in name.lower() for k in ["assets/", "res/raw/", ".db", ".sqlite", ".json", ".epub", "libapp.so", "classes.dex"]):
-                          report["apk_files"].append(name)
-                      if name.endswith((".dex", ".so", ".json", ".xml")) and z.getinfo(name).file_size < 25000000:
+                  all_names = z.namelist()
+                  report["all_files_count"] = len(all_names)
+
+                  for name in all_names:
+                      info = z.getinfo(name)
+                      fsize = info.file_size
+                      low = name.lower()
+
+                      # تسجيل الملفات المهمة
+                      if (
+                          low.startswith(("assets/", "res/raw/", "lib/"))
+                          or low.endswith((".db", ".sqlite", ".sqlite3", ".json", ".epub", ".dex", ".bundle", ".txt", ".mp3"))
+                          or fsize > 100000
+                      ):
+                          report["interesting_files"].append({"name": name, "size": fsize})
+
+                      if fsize == 0 or fsize > 40000000:
+                          continue
+
+                      raw = z.read(name)
+
+                      # فحص البصمة الحقيقية لقواعد بيانات SQLite حتى لو كان اسم الملف مختلفاً
+                      if raw[:15] == b"SQLite format 3" or low.endswith((".db", ".sqlite", ".sqlite3")):
+                          safe_name = name.replace("/", "_")
+                          out_db = os.path.join("data/extracted", safe_name)
+                          with open(out_db, "wb") as f:
+                              f.write(raw)
                           try:
-                              raw_bytes = z.read(name)
-                              for m in re.findall(rb'https?://[a-zA-Z0-9._/-]{8,120}', raw_bytes):
-                                  u_str = m.decode("utf-8", errors="ignore")
-                                  if not any(ig in u_str for ig in ["schemas.android", "w3.org", "google.com/apk", "apache.org", "facebook.com", "github.com"]):
-                                      urls_found.add(u_str)
+                              conn = sqlite3.connect(out_db)
+                              cur = conn.cursor()
+                              tables = [r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+                              db_info = {}
+                              for t in tables[:25]:
+                                  cols = [c[1] for c in cur.execute(f"PRAGMA table_info(`{t}`)").fetchall()]
+                                  cnt = cur.execute(f"SELECT COUNT(*) FROM `{t}`").fetchone()[0]
+                                  sample_row = cur.execute(f"SELECT * FROM `{t}` LIMIT 1").fetchone()
+                                  sample_str = [str(x)[:120] for x in sample_row] if sample_row else []
+                                  db_info[t] = {"columns": cols, "rows": cnt, "sample": sample_str}
+                              report["sqlite_databases"][name] = db_info
+                              conn.close()
+                          except Exception as e:
+                              report["sqlite_databases"][name] = str(e)
+
+                      # فحص ملفات JSON داخل assets أو res/raw
+                      elif low.endswith(".json") and ("assets/" in low or "raw/" in low):
+                          try:
+                              txt = raw.decode("utf-8", errors="ignore")
+                              report["json_files_preview"][name] = txt[:400]
                           except Exception:
                               pass
-              report["discovered_apis"] = sorted(list(urls_found))[:150]
 
-          os.makedirs("data", exist_ok=True)
-          with open("data/cloud_extract_report.json", "w", encoding="utf-8") as f:
+                      # استخراج روابط السيرفرات والـ API من الكود المصدري
+                      if low.endswith((".dex", ".so", ".json", ".bundle", ".xml")):
+                          for m in re.findall(rb'https?://[a-zA-Z0-9._/?=&%-]{8,160}', raw):
+                              u = m.decode("utf-8", errors="ignore")
+                              if not any(ig in u for ig in [
+                                  "schemas.android.com", "w3.org", "google.com", "googleapis.com",
+                                  "apache.org", "github.com", "mozilla.org", "facebook.com", "flutter.io"
+                              ]):
+                                  urls.add(u)
+
+              report["discovered_urls"] = sorted(list(urls))[:250]
+
+          with open("data/apk_unpack_report.json", "w", encoding="utf-8") as f:
               json.dump(report, f, ensure_ascii=False, indent=2)
 
           summary = (
-              "✅ *اكتمل الفحص بنجاح!*\n\n"
-              f"📦 *فحص حزمة APK السحابي:* {'تم السحب ✔️' if report['apk_found'] else 'غير مرفوع على Aptoide'}\n"
-              f"🛒 *صفحات الكتب وسلة التحميل المفحوصة:* {len(report['cart_and_download_inspect'])}\n\n"
-              "📎 مرفق ملف (`cloud_extract_report.json`)، افتحه وصوّره أو انسخ محتواه لي هنا!"
+              "✅ *اكتمل تفكيك ملف التطبيق (15MB) بنجاح!*\n\n"
+              f"📥 *حالة استلام الملف:* {'تم السحب بنجاح ✔️' if downloaded else 'لم يتم العثور على الملف'}\n"
+              f"📦 *إجمالي الملفات داخل الحزمة:* {report['all_files_count']}\n"
+              f"🗄️ *قواعد بيانات SQLite المكتشفة:* {len(report['sqlite_databases'])}\n"
+              f"🌐 *روابط السيرفرات والـ API المكتشفة:* {len(report['discovered_urls'])}\n\n"
+              "📎 مرفق ملف التقرير (`apk_unpack_report.json`)، افتحه وصوّر لي محتواه لنربط الجداول كاملة فوراً!"
           )
           tg_msg(summary)
-          tg_doc("data/cloud_extract_report.json", "تقرير فحص روابط الكتب والحزمة")
+          tg_doc("data/apk_unpack_report.json", "تقرير تفكيك حزمة الـ 15MB وقواعد البيانات")
           EOF
-          python3 cloud_extractor.py
+          python3 unpack_bot_apk.py
+
+      - name: Save Extracted Databases to Repo
+        run: |
+          git config user.name "RohAlquranBot"
+          git config user.email "bot@rohalquran.app"
+          git add data/
+          git diff --staged --quiet || git commit -m "Save unpacked APK report and databases"
+          git push || true
