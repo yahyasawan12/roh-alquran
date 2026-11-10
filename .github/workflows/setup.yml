@@ -1,4 +1,4 @@
-name: Cloud APK & Full Books Extractor
+name: Cloud APK & Cart Books Extractor
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
       - name: Install tools
         run: pip install requests beautifulsoup4 lxml cloudscraper
 
-      - name: Download & Inspect Original APK + Website Books
+      - name: Extract Cart Downloads & APK Structure
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
@@ -25,6 +25,7 @@ jobs:
           import os, re, json, zipfile
           import requests, cloudscraper
           from bs4 import BeautifulSoup
+          from urllib.parse import urljoin, unquote
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
@@ -47,18 +48,69 @@ jobs:
                       timeout=30
                   )
 
-          tg_msg("🚀 *بدأ السيرفر السحابي بفحص وسحب حزمة تطبيق (مكتبة الأمين) وسلة الكتب...*")
+          tg_msg("⏳ *بدأ السيرفر الآن بفحص روابط التحميل المخفية وسحب بيانات الحزمة...*")
 
           report = {
               "apk_found": False,
               "apk_source": "",
               "apk_files": [],
-              "discovered_apis_and_urls": [],
-              "book_page_structure": {},
-              "cart_test": {}
+              "discovered_apis": [],
+              "cart_and_download_inspect": [],
+              "raw_shortcodes_found": []
           }
 
-          # 1. البحث عن ملف APK الأصلي عبر واجهة Aptoide و APKPure السحابية
+          # 1. فحص محتوى الكود الخام للمنتجات (لماذا ظهر [box type="download"] في الكتب؟)
+          try:
+              r_prod = scraper.get("https://www.amin-sheikho.com/wp-json/wp/v2/product?per_page=15", timeout=20)
+              if r_prod.status_code == 200:
+                  for p in r_prod.json()[:8]:
+                      title = (p.get("title") or {}).get("rendered", "")
+                      content_html = (p.get("content") or {}).get("rendered", "")
+                      link = p.get("link", "")
+                      soup_c = BeautifulSoup(content_html, "lxml")
+                      links_in_content = [a.get("href") for a in soup_c.find_all("a", href=True)]
+                      report["raw_shortcodes_found"].append({
+                          "title": title,
+                          "url": link,
+                          "links_inside_content": links_in_content,
+                          "html_sample": content_html[:600]
+                      })
+          except Exception as e:
+              report["wp_product_error"] = str(e)
+
+          # 2. فحص أزرار (add-to-cart) وروابط التحميل المباشرة داخل صفحات الكتب
+          try:
+              test_urls = [item["url"] for item in report["raw_shortcodes_found"][:4] if item.get("url")]
+              for u in test_urls:
+                  page_res = scraper.get(u, timeout=15)
+                  soup = BeautifulSoup(page_res.text, "lxml")
+                  dl_elements = []
+                  for a in soup.find_all("a", href=True):
+                      href = a["href"]
+                      txt = a.get_text(strip=True)
+                      if any(k in href.lower() or k in txt for k in ["add-to-cart", "download", "epub", "pdf", "mp3", "سلة", "تحميل", "صيغ"]):
+                          dl_elements.append({"text": txt, "href": href})
+
+                  # تجربة تتبع أول رابط add-to-cart لمعرفة ماذا يعطي السيرفر
+                  cart_result = ""
+                  for el in dl_elements:
+                      if "add-to-cart=" in el["href"]:
+                          cart_url = urljoin(u, el["href"])
+                          c_resp = scraper.get(cart_url, timeout=15)
+                          c_soup = BeautifulSoup(c_resp.text, "lxml")
+                          c_links = [ca["href"] for ca in c_soup.find_all("a", href=True) if any(x in ca["href"].lower() for x in ["checkout", "download", "epub", "pdf", "cart"])]
+                          cart_result = {"tested_url": cart_url, "result_links": c_links[:10]}
+                          break
+
+                  report["cart_and_download_inspect"].append({
+                      "page": u,
+                      "buttons": dl_elements[:15],
+                      "cart_Simulation": cart_result
+                  })
+          except Exception as e:
+              report["cart_error"] = str(e)
+
+          # 3. محاولة سحب معلومات وحزمة التطبيق من Aptoide API
           apk_path = "alamin.apk"
           try:
               apt_url = f"https://ws75.aptoide.com/api/7/app/get/package_name={PKG}"
@@ -68,77 +120,41 @@ jobs:
                   dl_url = (((data.get("nodes") or {}).get("meta") or {}).get("data") or {}).get("file", {}).get("path")
                   if dl_url:
                       report["apk_source"] = dl_url
-                      apk_ bin = requests.get(dl_url, timeout=60).content
+                      apk_bin = requests.get(dl_url, timeout=60).content
                       with open(apk_path, "wb") as f:
                           f.write(apk_bin)
                       report["apk_found"] = True
           except Exception as e:
               report["aptoide_note"] = str(e)
 
-          if not report["apk_found"]:
-              for mirror in [
-                  f"https://d.apkpure.com/b/APK/{PKG}?version=latest",
-                  f"https://d.apkpure.net/b/APK/{PKG}?version=latest"
-              ]:
-                  try:
-                      r = scraper.get(mirror, timeout=30, allow_redirects=True)
-                      if r.status_code == 200 and len(r.content) > 1000000:
-                          with open(apk_path, "wb") as f:
-                              f.write(r.content)
-                          report["apk_found"] = True
-                          report["apk_source"] = mirror
-                          break
-                  except Exception:
-                      pass
-
-          # 2. إذا نزل الـ APK في السحابة، نفك ضغطه ونستخرج قواعد البيانات وروابط السيرفر الخلفي
-          if report["apk_found"] and zipfile.is_zipfile(apk_path):
+          if report["apk_found"] and os.path.exists(apk_path) and zipfile.is_zipfile(apk_path):
               urls_found = set()
               with zipfile.ZipFile(apk_path, "r") as z:
                   for name in z.namelist():
-                      if any(k in name.lower() for k in ["assets/", "res/raw/", ".db", ".sqlite", ".json", ".epub", "bundle", "libapp.so", "classes.dex"]):
+                      if any(k in name.lower() for k in ["assets/", "res/raw/", ".db", ".sqlite", ".json", ".epub", "libapp.so", "classes.dex"]):
                           report["apk_files"].append(name)
-                      if name.endswith((".dex", ".so", ".bundle", ".json", ".js", ".xml")) and z.getinfo(name).file_size < 25000000:
+                      if name.endswith((".dex", ".so", ".json", ".xml")) and z.getinfo(name).file_size < 25000000:
                           try:
                               raw_bytes = z.read(name)
                               for m in re.findall(rb'https?://[a-zA-Z0-9._/-]{8,120}', raw_bytes):
-                                  u = m.decode("utf-8", errors="ignore")
-                                  if not any(ig in u for ig in ["schemas.android", "w3.org", "google.com/apk", "apache.org", "facebook.com", "github.com"]):
-                                      urls_found.add(u)
+                                  u_str = m.decode("utf-8", errors="ignore")
+                                  if not any(ig in u_str for ig in ["schemas.android", "w3.org", "google.com/apk", "apache.org", "facebook.com", "github.com"]):
+                                      urls_found.add(u_str)
                           except Exception:
                               pass
-              report["discovered_apis_and_urls"] = sorted(list(urls_found))[:150]
-
-          # 3. فحص صفحة كتاب إلكتروني وصوتي في الموقع لكشف محتوى (الصيغ الإلكترونية المتوفرة)
-          try:
-              prod_res = scraper.get("https://www.amin-sheikho.com/wp-json/wp/v2/product?per_page=20", timeout=20).json()
-              for p in prod_res[:5]:
-                  link = p.get("link", "")
-                  if link:
-                      html = scraper.get(link, timeout=15).text
-                      soup = BeautifulSoup(html, "lxml")
-                      accordions = [el.get_text(" | ", strip=True) for el in soup.find_all(["div", "section", "ul"]) if "الصيغ" in el.get_text() or "فهرس" in el.get_text()]
-                      all_links = [a.get("href") for a in soup.find_all("a", href=True) if any(x in a.get("href", "") for x in ["cart", "download", "file", "pdf", "epub", "mp3", "play.google", "apple"])]
-                      report["book_page_structure"][p.get("title", {}).get("rendered", "")] = {
-                          "url": link,
-                          "links_in_page": all_links[:20],
-                          "accordions_preview": [a[:300] for a in accordions[:3]]
-                      }
-          except Exception as e:
-              report["book_page_error"] = str(e)
+              report["discovered_apis"] = sorted(list(urls_found))[:150]
 
           os.makedirs("data", exist_ok=True)
           with open("data/cloud_extract_report.json", "w", encoding="utf-8") as f:
               json.dump(report, f, ensure_ascii=False, indent=2)
 
           summary = (
-              "✅ *اكتمل الفحص السحابي لحزمة التطبيق والموقع!*\n\n"
-              f"📦 *سحب الـ APK في السحابة:* {'نجح ✔️' if report['apk_found'] else 'يتطلب استخراج ملف القاعدة من الجهاز'}\n"
-              f"📂 *عدد الملفات المهمة داخل الحزمة:* {len(report['apk_files'])}\n"
-              f"🌐 *روابط السيرفرات المكتشفة:* {len(report['discovered_apis_and_urls'])}\n\n"
-              "📎 مرفق ملف التقرير (`cloud_extract_report.json`)، افتحه وأرسله لي لنبدأ فوراً بربط التأويل آية بآية!"
+              "✅ *اكتمل الفحص بنجاح!*\n\n"
+              f"📦 *فحص حزمة APK السحابي:* {'تم السحب ✔️' if report['apk_found'] else 'غير مرفوع على Aptoide'}\n"
+              f"🛒 *صفحات الكتب وسلة التحميل المفحوصة:* {len(report['cart_and_download_inspect'])}\n\n"
+              "📎 مرفق ملف (`cloud_extract_report.json`)، افتحه وصوّره أو انسخ محتواه لي هنا!"
           )
           tg_msg(summary)
-          tg_doc("data/cloud_extract_report.json", "تقرير تفكيك الحزمة والسيرفرات")
+          tg_doc("data/cloud_extract_report.json", "تقرير فحص روابط الكتب والحزمة")
           EOF
           python3 cloud_extractor.py
