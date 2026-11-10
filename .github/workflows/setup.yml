@@ -1,4 +1,4 @@
-name: Unpack 15MB APK & Extract Databases
+name: Read Saved Report Summary
 
 on:
   push:
@@ -7,194 +7,56 @@ on:
   workflow_dispatch:
 
 jobs:
-  unpack-apk:
+  summarize-report:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python & Telethon
-        run: pip install requests telethon
+      - name: Install requests
+        run: pip install requests
 
-      - name: Fetch APK from Bot & Deep Inspect
+      - name: Send Readable Summary to Telegram Chat
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
         run: |
-          cat << 'EOF' > unpack_bot_apk.py
-          import os, re, json, zipfile, sqlite3, asyncio
-          import requests
+          python3 - << 'EOF'
+          import os, json, requests
+          from collections import Counter
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
 
-          def tg_msg(text):
-              r = requests.post(
+          def send_txt(txt):
+              requests.post(
                   f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                  json={"chat_id": ADMIN_ID, "text": text, "parse_mode": "Markdown"},
+                  json={"chat_id": ADMIN_ID, "text": txt[:4000]},
                   timeout=15
               )
-              try:
-                  return r.json().get("result", {}).get("message_id")
-              except Exception:
-                  return None
 
-          def tg_doc(path, caption):
-              with open(path, "rb") as f:
-                  requests.post(
-                      f"https://api.telegram.org/bot{TOKEN}/sendDocument",
-                      data={"chat_id": ADMIN_ID, "caption": caption},
-                      files={"document": f},
-                      timeout=30
-                  )
+          with open("data/apk_unpack_report.json", "r", encoding="utf-8") as f:
+              rep = json.load(f)
 
-          # ضمان تفعيل قراءة الرسائل بدون تعارض
-          requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=false", timeout=10)
+          urls = rep.get("discovered_urls", [])
+          files = rep.get("interesting_files", [])
+          jsons = rep.get("json_files_preview", {})
 
-          apk_path = "uploaded_app.apk"
-          downloaded = False
-          doc_meta = {}
+          # تجميع المجلدات وأكبر الملفات حجماً
+          folders = Counter("/".join(x["name"].split("/")[:-1]) for x in files)
+          biggest = sorted(files, key=lambda x: x["size"], reverse=True)[:20]
 
-          # 1. البحث المباشر في التحديثات الأخيرة للبوت
-          up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?limit=50", timeout=20).json()
-          for item in reversed(up.get("result", [])):
-              msg = item.get("message") or item.get("channel_post") or {}
-              doc = msg.get("document")
-              if doc:
-                  doc_meta = doc
-                  fid = doc.get("file_id")
-                  f_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=20).json()
-                  if f_res.get("ok"):
-                      fpath = f_res["result"]["file_path"]
-                      data = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=120).content
-                      with open(apk_path, "wb") as f:
-                          f.write(data)
-                      downloaded = True
-                      break
+          msg1 = "🌐 الروابط الـ 14 المكتشفة داخل التطبيق:\n" + "\n".join(f"- {u}" for u in urls)
+          msg1 += "\n\n📂 توزيع المجلدات داخل الحزمة:\n" + "\n".join(f"- {k}: {v} ملف" for k, v in folders.most_common(15))
+          msg1 += "\n\n📦 أكبر 20 ملفاً داخل التطبيق:\n" + "\n".join(f"- {x['name']} ({round(x['size']/1024, 1)} KB)" for x in biggest)
+          send_txt(msg1)
 
-          sent_id = tg_msg("🔍 *تم الاتصال بالبوت.. جاري سحب ملف التطبيق (15MB) وتفكيك قواعد البيانات والروابط...*")
-
-          # 2. خطة بديلة تلقائية عبر Telethon إذا لم يظهر الملف في getUpdates
-          if not downloaded and sent_id:
-              async def fetch_recent_apk():
-                  from telethon import TelegramClient
-                  client = TelegramClient("bot_session", 6, "eb06d4abfb49dc3eeb1aeb98ae0f581e")
-                  await client.start(bot_token=TOKEN)
-                  ids_to_check = list(range(max(1, int(sent_id) - 30), int(sent_id)))
-                  msgs = await client.get_messages(int(ADMIN_ID), ids=ids_to_check)
-                  for m in reversed(msgs):
-                      if m and m.document:
-                          doc_meta["mime_type"] = getattr(m.document, "mime_type", "")
-                          doc_meta["size"] = getattr(m.document, "size", 0)
-                          await m.download_media(file=apk_path)
-                          break
-                  await client.disconnect()
-              try:
-                  asyncio.run(fetch_recent_apk())
-                  if os.path.exists(apk_path) and os.path.getsize(apk_path) > 10000:
-                      downloaded = True
-              except Exception as e:
-                  doc_meta["telethon_fallback_error"] = str(e)
-
-          report = {
-              "apk_downloaded": downloaded,
-              "apk_size_bytes": os.path.getsize(apk_path) if os.path.exists(apk_path) else 0,
-              "document_meta": doc_meta,
-              "all_files_count": 0,
-              "interesting_files": [],
-              "sqlite_databases": {},
-              "json_files_preview": {},
-              "discovered_urls": []
-          }
-
-          os.makedirs("data/extracted", exist_ok=True)
-
-          if downloaded and os.path.exists(apk_path) and zipfile.is_zipfile(apk_path):
-              urls = set()
-              with zipfile.ZipFile(apk_path, "r") as z:
-                  all_names = z.namelist()
-                  report["all_files_count"] = len(all_names)
-
-                  for name in all_names:
-                      info = z.getinfo(name)
-                      fsize = info.file_size
-                      low = name.lower()
-
-                      # تسجيل الملفات المهمة
-                      if (
-                          low.startswith(("assets/", "res/raw/", "lib/"))
-                          or low.endswith((".db", ".sqlite", ".sqlite3", ".json", ".epub", ".dex", ".bundle", ".txt", ".mp3"))
-                          or fsize > 100000
-                      ):
-                          report["interesting_files"].append({"name": name, "size": fsize})
-
-                      if fsize == 0 or fsize > 40000000:
-                          continue
-
-                      raw = z.read(name)
-
-                      # فحص البصمة الحقيقية لقواعد بيانات SQLite حتى لو كان اسم الملف مختلفاً
-                      if raw[:15] == b"SQLite format 3" or low.endswith((".db", ".sqlite", ".sqlite3")):
-                          safe_name = name.replace("/", "_")
-                          out_db = os.path.join("data/extracted", safe_name)
-                          with open(out_db, "wb") as f:
-                              f.write(raw)
-                          try:
-                              conn = sqlite3.connect(out_db)
-                              cur = conn.cursor()
-                              tables = [r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-                              db_info = {}
-                              for t in tables[:25]:
-                                  cols = [c[1] for c in cur.execute(f"PRAGMA table_info(`{t}`)").fetchall()]
-                                  cnt = cur.execute(f"SELECT COUNT(*) FROM `{t}`").fetchone()[0]
-                                  sample_row = cur.execute(f"SELECT * FROM `{t}` LIMIT 1").fetchone()
-                                  sample_str = [str(x)[:120] for x in sample_row] if sample_row else []
-                                  db_info[t] = {"columns": cols, "rows": cnt, "sample": sample_str}
-                              report["sqlite_databases"][name] = db_info
-                              conn.close()
-                          except Exception as e:
-                              report["sqlite_databases"][name] = str(e)
-
-                      # فحص ملفات JSON داخل assets أو res/raw
-                      elif low.endswith(".json") and ("assets/" in low or "raw/" in low):
-                          try:
-                              txt = raw.decode("utf-8", errors="ignore")
-                              report["json_files_preview"][name] = txt[:400]
-                          except Exception:
-                              pass
-
-                      # استخراج روابط السيرفرات والـ API من الكود المصدري
-                      if low.endswith((".dex", ".so", ".json", ".bundle", ".xml")):
-                          for m in re.findall(rb'https?://[a-zA-Z0-9._/?=&%-]{8,160}', raw):
-                              u = m.decode("utf-8", errors="ignore")
-                              if not any(ig in u for ig in [
-                                  "schemas.android.com", "w3.org", "google.com", "googleapis.com",
-                                  "apache.org", "github.com", "mozilla.org", "facebook.com", "flutter.io"
-                              ]):
-                                  urls.add(u)
-
-              report["discovered_urls"] = sorted(list(urls))[:250]
-
-          with open("data/apk_unpack_report.json", "w", encoding="utf-8") as f:
-              json.dump(report, f, ensure_ascii=False, indent=2)
-
-          summary = (
-              "✅ *اكتمل تفكيك ملف التطبيق (15MB) بنجاح!*\n\n"
-              f"📥 *حالة استلام الملف:* {'تم السحب بنجاح ✔️' if downloaded else 'لم يتم العثور على الملف'}\n"
-              f"📦 *إجمالي الملفات داخل الحزمة:* {report['all_files_count']}\n"
-              f"🗄️ *قواعد بيانات SQLite المكتشفة:* {len(report['sqlite_databases'])}\n"
-              f"🌐 *روابط السيرفرات والـ API المكتشفة:* {len(report['discovered_urls'])}\n\n"
-              "📎 مرفق ملف التقرير (`apk_unpack_report.json`)، افتحه وصوّر لي محتواه لنربط الجداول كاملة فوراً!"
-          )
-          tg_msg(summary)
-          tg_doc("data/apk_unpack_report.json", "تقرير تفكيك حزمة الـ 15MB وقواعد البيانات")
+          # إرسال أسماء أول 30 ملف JSON مع عينة من محتواها
+          json_keys = list(jsons.keys())
+          msg2 = f"📑 إجمالي ملفات JSON المكتشفة: {len(json_keys)}\n\nأمثلة لأسماء ملفات JSON:\n"
+          msg2 += "\n".join(f"- {k}" for k in json_keys[:25])
+          msg2 += "\n\n🔍 عينة من داخل أول 4 ملفات JSON:\n"
+          for k in json_keys[:4]:
+              msg2 += f"\n--- [{k}] ---\n{jsons[k][:300]}\n"
+          send_txt(msg2)
           EOF
-          python3 unpack_bot_apk.py
-
-      - name: Save Extracted Databases to Repo
-        run: |
-          git config user.name "RohAlquranBot"
-          git config user.email "bot@rohalquran.app"
-          git add data/
-          git diff --staged --quiet || git commit -m "Save unpacked APK report and databases"
-          git push || true
