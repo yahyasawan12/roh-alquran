@@ -1,4 +1,4 @@
-name: Extract Flutter libapp.so & Backend APIs
+name: Simple Direct XAPK Scanner
 
 on:
   push:
@@ -7,133 +7,95 @@ on:
   workflow_dispatch:
 
 jobs:
-  extract-libapp:
+  scan-direct:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python & Telethon
-        run: pip install requests telethon
+      - name: Install Python requests
+        run: pip install requests
 
-      - name: Deep Scan XAPK / Split APK for libapp.so APIs
+      - name: Fetch and Scan XAPK from Bot
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
         run: |
-          cat << 'EOF' > scan_libapp.py
-          import os, re, io, json, zipfile, asyncio
-          import requests
+          python3 - << 'EOF'
+          import os, re, zipfile, io, requests
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
 
-          def tg_msg(text):
-              r = requests.post(
-                  f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                  json={"chat_id": ADMIN_ID, "text": text[:4000]},
-                  timeout=15
-              )
-              try:
-                  return r.json().get("result", {}).get("message_id")
-              except Exception:
-                  return None
+          def send_telegram(text):
+              for i in range(0, len(text), 4000):
+                  requests.post(
+                      f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                      json={"chat_id": ADMIN_ID, "text": text[i:i+4000]},
+                      timeout=20
+                  )
 
-          requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=false", timeout=10)
-          sent_id = tg_msg("⏳ جاري سحب ملف الـ XAPK / Split APK واستخراج روابط التأويل والكتب من داخل (libapp.so)...")
+          send_telegram("🔍 جاري فحص ملف الـ XAPK وإرسال الروابط والمسارات...")
 
-          pkg_path = "bundle_pkg.bin"
-          downloaded = False
-          doc_name = ""
-
-          # 1. محاولة السحب السريع إذا كان أقل من 20MB
+          # جلب آخر ملف مرسل للبوت عبر getUpdates
+          file_id = None
+          file_name = "unknown"
           up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?limit=50", timeout=20).json()
+
           for item in reversed(up.get("result", [])):
               msg = item.get("message") or item.get("channel_post") or {}
               doc = msg.get("document")
               if doc:
-                  doc_name = doc.get("file_name", "file")
-                  fid = doc.get("file_id")
-                  f_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=20).json()
-                  if f_res.get("ok"):
-                      fpath = f_res["result"]["file_path"]
-                      data = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=120).content
-                      with open(pkg_path, "wb") as f:
-                          f.write(data)
-                      downloaded = True
+                  file_id = doc.get("file_id")
+                  file_name = doc.get("file_name", "app.xapk")
                   break
 
-          # 2. السحب عبر Telethon إذا كان حجم الـ XAPK أكبر من 20MB
-          if not downloaded and sent_id:
-              async def fetch_large_xapk():
-                  global doc_name
-                  from telethon import TelegramClient
-                  client = TelegramClient("bot_xapk", 6, "eb06d4abfb49dc3eeb1aeb98ae0f581e")
-                  await client.start(bot_token=TOKEN)
-                  ids_to_check = list(range(max(1, int(sent_id) - 25), int(sent_id)))
-                  msgs = await client.get_messages(int(ADMIN_ID), ids=ids_to_check)
-                  for m in reversed(msgs):
-                      if m and m.document:
-                          for attr in m.document.attributes:
-                              if hasattr(attr, "file_name"):
-                                  doc_name = attr.file_name
-                          await m.download_media(file=pkg_path)
-                          break
-                  await client.disconnect()
-              try:
-                  asyncio.run(fetch_large_xapk())
-                  if os.path.exists(pkg_path) and os.path.getsize(pkg_path) > 10000:
-                      downloaded = True
-              except Exception as e:
-                  tg_msg(f"⚠️ ملاحظة Telethon: {e}")
+          if not file_id:
+              send_telegram("⚠️ لم يتم العثور على ملف مرفق في المحادثة الأخيرة. تأكد من إرسال الـ XAPK للبوت.")
+              exit()
 
-          found_urls = set()
-          api_routes = set()
-          so_files_found = []
+          f_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={file_id}", timeout=20).json()
+          if not f_res.get("ok"):
+              send_telegram("⚠️ فشل جلب مسار الملف من تيليجرام.")
+              exit()
 
-          def scan_binary_bytes(label, raw_bytes):
-              so_files_found.append(f"{label} ({round(len(raw_bytes)/1048576, 2)} MB)")
-              # استخراج جميع الروابط الكاملة
-              for m in re.findall(rb'https?://[a-zA-Z0-9._/?=&%:-]{6,180}', raw_bytes):
+          fpath = f_res["result"]["file_path"]
+          apk_data = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=180).content
+
+          urls = set()
+          apis = set()
+          so_list = []
+
+          def scan_bytes(name_tag, data_bytes):
+              so_list.append(f"{name_tag} ({len(data_bytes)} bytes)")
+              for m in re.findall(rb'https?://[a-zA-Z0-9._/?=&%:-]{6,160}', data_bytes):
                   u = m.decode("utf-8", errors="ignore")
-                  if not any(ig in u for ig in [
-                      "schemas.android", "w3.org", "google.com", "googleapis.com",
-                      "apache.org", "github.com", "mozilla.org", "flutter.dev", "dart.dev",
-                      "dashif.org", "adobe.com", "aomedia.org", "apple.com", "jetbrains.com"
-                  ]):
-                      found_urls.add(u)
-              # استخراج مسارات الـ API والكلمات المفتاحية للكتب والتأويل
-              for m in re.findall(rb'[a-zA-Z0-9_.-]*?(?:sheikho|alamin|tafsir|tawil|taweel|books|audio|quran|api/v|wp-json|supabase|firebase|amazonaws|digitalocean|cloudflare)[a-zA-Z0-9_./?=&:-]{2,120}', raw_bytes, re.IGNORECASE):
+                  if not any(ig in u for ig in ["schemas.android", "w3.org", "google.com", "googleapis.com", "apache.org", "github.com", "mozilla.org", "flutter.dev", "dart.dev"]):
+                      urls.add(u)
+              for m in re.findall(rb'[a-zA-Z0-9_.-]*?(?:sheikho|alamin|tafsir|tawil|taweel|books|audio|quran|api/v|wp-json|supabase|firebase|amazonaws|digitalocean)[a-zA-Z0-9_./?=&:-]{2,100}', data_bytes, re.IGNORECASE):
                   s = m.decode("utf-8", errors="ignore")
-                  if len(s) > 5 and not s.endswith((".dart", ".java", ".kt")):
-                      api_routes.add(s)
+                  if len(s) > 4:
+                      apis.add(s)
 
-          if downloaded and os.path.exists(pkg_path):
-              if zipfile.is_zipfile(pkg_path):
-                  with zipfile.ZipFile(pkg_path, "r") as z:
-                      for name in z.namelist():
-                          low = name.lower()
-                          if low.endswith(".so") or "kernel_blob" in low or "app.dill" in low:
-                              scan_binary_bytes(name, z.read(name))
-                          elif low.endswith(".apk"):
-                              # فتح ملفات الـ APK الداخلية الموجودة داخل الـ XAPK
-                              inner_bytes = z.read(name)
-                              if zipfile.is_zipfile(io.BytesIO(inner_bytes)):
-                                  with zipfile.ZipFile(io.BytesIO(inner_bytes), "r") as iz:
-                                      for iname in iz.namelist():
-                                          ilow = iname.lower()
-                                          if ilow.endswith(".so") or "kernel_blob" in ilow:
-                                              scan_binary_bytes(f"{name} -> {iname}", iz.read(iname))
-              else:
-                  with open(pkg_path, "rb") as f:
-                      scan_binary_bytes(doc_name, f.read())
+          if zipfile.is_zipfile(io.BytesIO(apk_data)):
+              with zipfile.ZipFile(io.BytesIO(apk_data), "r") as z:
+                  for name in z.namelist():
+                      low = name.lower()
+                      if low.endswith(".so") or "kernel_blob" in low or "app.dill" in low:
+                          scan_bytes(name, z.read(name))
+                      elif low.endswith(".apk"):
+                          inner = z.read(name)
+                          if zipfile.is_zipfile(io.BytesIO(inner)):
+                              with zipfile.ZipFile(io.BytesIO(inner), "r") as iz:
+                                  for iname in iz.namelist():
+                                      if iname.lower().endswith(".so") or "kernel_blob" in iname.lower():
+                                          scan_bytes(f"{name} -> {iname}", iz.read(iname))
 
-          msg_out = (
-              f"✅ نتائج فحص الملف المرسل ({doc_name}):\n\n"
-              f"🧠 ملفات النظام المفحوصة:\n" + ("\n".join(f"- {x}" for x in so_files_found) or "- لا يوجد ملف libapp.so في هذه الحزمة") + "\n\n"
-              f"🌐 الروابط المكتشفة ({len(found_urls)}):\n" + ("\n".join(f"- {u}" for u in sorted(found_urls)[:60]) or "- لم يتم العثور على روابط خارجية") + "\n\n"
-              f"🔗 مسارات السيرفر والـ API المكتشفة ({len(api_routes)}):\n" + ("\n".join(f"- {r}" for r in sorted(api_routes)[:80]) or "- لا توجد مسارات")
+          out_msg = (
+              f"✅ تم فحص ملف ({file_name}) بنجاح!\n\n"
+              f"🧠 ملفات النظام المفحوصة:\n" + ("\n".join(f"- {x}" for x in so_list) or "لا توجد ملفات .so") + "\n\n"
+              f"🌐 الروابط المكتشفة ({len(urls)}):\n" + ("\n".join(f"- {u}" for u in sorted(urls)[:50]) or "لا توجد روابط") + "\n\n"
+              f"🔗 المسارات والـ APIs ({len(apis)}):\n" + ("\n".join(f"- {r}" for r in sorted(apis)[:60]) or "لا توجد مسارات")
           )
-          tg_msg(msg_out)
+          send_telegram(out_msg)
           EOF
-          python3 scan_libapp.py
