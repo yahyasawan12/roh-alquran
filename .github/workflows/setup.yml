@@ -1,4 +1,4 @@
-name: Simple Direct XAPK Scanner
+name: Robust Telethon XAPK Downloader
 
 on:
   push:
@@ -7,25 +7,27 @@ on:
   workflow_dispatch:
 
 jobs:
-  scan-direct:
+  scan-telethon:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python requests
-        run: pip install requests
+      - name: Install Python & Telethon
+        run: pip install requests telethon
 
-      - name: Fetch and Scan XAPK from Bot
+      - name: Fetch XAPK via Telethon and Scan
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
         run: |
           python3 - << 'EOF'
-          import os, re, zipfile, io, requests
+          import os, re, zipfile, io, asyncio
+          import requests
+          from telethon import TelegramClient
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
-          ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
+          ADMIN_ID = int(os.environ.get("ADMIN_ID", "5205216077"))
 
           def send_telegram(text):
               for i in range(0, len(text), 4000):
@@ -35,67 +37,63 @@ jobs:
                       timeout=20
                   )
 
-          send_telegram("🔍 جاري فحص ملف الـ XAPK وإرسال الروابط والمسارات...")
+          send_telegram("🔍 جاري الاتصال عبر بروتوكول Telethon لجلب ملف الـ XAPK من المحادثة مباشرة...")
 
-          # جلب آخر ملف مرسل للبوت عبر getUpdates
-          file_id = None
-          file_name = "unknown"
-          up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?limit=50", timeout=20).json()
+          async def main():
+              client = TelegramClient("bot_session", 6, "eb06d4abfb49dc3eeb1aeb98ae0f581e")
+              await client.start(bot_token=TOKEN)
+              
+              target_msg = None
+              async for message in client.iter_messages(ADMIN_ID, limit=15):
+                  if message.document:
+                      target_msg = message
+                      break
 
-          for item in reversed(up.get("result", [])):
-              msg = item.get("message") or item.get("channel_post") or {}
-              doc = msg.get("document")
-              if doc:
-                  file_id = doc.get("file_id")
-                  file_name = doc.get("file_name", "app.xapk")
-                  break
+              if not target_msg:
+                  send_telegram("⚠️ لم يتم العثور على أي ملف مرفق في محادثة البوت الأخيرة. تأكد من إرساله مجدداً للمحادثة.")
+                  await client.disconnect()
+                  return
 
-          if not file_id:
-              send_telegram("⚠️ لم يتم العثور على ملف مرفق في المحادثة الأخيرة. تأكد من إرسال الـ XAPK للبوت.")
-              exit()
+              send_telegram("📥 تم العثور على الملف، جاري تحميله إلى السيرفر لفحصه...")
+              file_bytes = await target_msg.download_media(file=bytes)
+              await client.disconnect()
 
-          f_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={file_id}", timeout=20).json()
-          if not f_res.get("ok"):
-              send_telegram("⚠️ فشل جلب مسار الملف من تيليجرام.")
-              exit()
+              urls = set()
+              apis = set()
+              so_list = []
 
-          fpath = f_res["result"]["file_path"]
-          apk_data = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=180).content
+              def scan_bytes(name_tag, data_bytes):
+                  so_list.append(f"{name_tag} ({len(data_bytes)} bytes)")
+                  for m in re.findall(rb'https?://[a-zA-Z0-9._/?=&%:-]{6,160}', data_bytes):
+                      u = m.decode("utf-8", errors="ignore")
+                      if not any(ig in u for ig in ["schemas.android", "w3.org", "google.com", "googleapis.com", "apache.org", "github.com", "mozilla.org", "flutter.dev", "dart.dev"]):
+                          urls.add(u)
+                  for m in re.findall(rb'[a-zA-Z0-9_.-]*?(?:sheikho|alamin|tafsir|tawil|taweel|books|audio|quran|api/v|wp-json|supabase|firebase|amazonaws|digitalocean)[a-zA-Z0-9_./?=&:-]{2,100}', data_bytes, re.IGNORECASE):
+                      s = m.decode("utf-8", errors="ignore")
+                      if len(s) > 4:
+                          apis.add(s)
 
-          urls = set()
-          apis = set()
-          so_list = []
+              if zipfile.is_zipfile(io.BytesIO(file_bytes)):
+                  with zipfile.ZipFile(io.BytesIO(file_bytes), "r") as z:
+                      for name in z.namelist():
+                          low = name.lower()
+                          if low.endswith(".so") or "kernel_blob" in low or "app.dill" in low:
+                              scan_bytes(name, z.read(name))
+                          elif low.endswith(".apk"):
+                              inner = z.read(name)
+                              if zipfile.is_zipfile(io.BytesIO(inner)):
+                                  with zipfile.ZipFile(io.BytesIO(inner), "r") as iz:
+                                      for iname in iz.namelist():
+                                          if iname.lower().endswith(".so") or "kernel_blob" in iname.lower():
+                                              scan_bytes(f"{name} -> {iname}", iz.read(iname))
 
-          def scan_bytes(name_tag, data_bytes):
-              so_list.append(f"{name_tag} ({len(data_bytes)} bytes)")
-              for m in re.findall(rb'https?://[a-zA-Z0-9._/?=&%:-]{6,160}', data_bytes):
-                  u = m.decode("utf-8", errors="ignore")
-                  if not any(ig in u for ig in ["schemas.android", "w3.org", "google.com", "googleapis.com", "apache.org", "github.com", "mozilla.org", "flutter.dev", "dart.dev"]):
-                      urls.add(u)
-              for m in re.findall(rb'[a-zA-Z0-9_.-]*?(?:sheikho|alamin|tafsir|tawil|taweel|books|audio|quran|api/v|wp-json|supabase|firebase|amazonaws|digitalocean)[a-zA-Z0-9_./?=&:-]{2,100}', data_bytes, re.IGNORECASE):
-                  s = m.decode("utf-8", errors="ignore")
-                  if len(s) > 4:
-                      apis.add(s)
+              out_msg = (
+                  f"✅ تم فحص ملف الـ XAPK بنجاح تام عبر Telethon!\n\n"
+                  f"🧠 ملفات النظام المفحوصة:\n" + ("\n".join(f"- {x}" for x in so_list) or "لا توجد ملفات .so") + "\n\n"
+                  f"🌐 الروابط المكتشفة ({len(urls)}):\n" + ("\n".join(f"- {u}" for u in sorted(urls)[:50]) or "لا توجد روابط") + "\n\n"
+                  f"🔗 المسارات والـ APIs ({len(apis)}):\n" + ("\n".join(f"- {r}" for r in sorted(apis)[:60]) or "لا توجد مسارات")
+              )
+              send_telegram(out_msg)
 
-          if zipfile.is_zipfile(io.BytesIO(apk_data)):
-              with zipfile.ZipFile(io.BytesIO(apk_data), "r") as z:
-                  for name in z.namelist():
-                      low = name.lower()
-                      if low.endswith(".so") or "kernel_blob" in low or "app.dill" in low:
-                          scan_bytes(name, z.read(name))
-                      elif low.endswith(".apk"):
-                          inner = z.read(name)
-                          if zipfile.is_zipfile(io.BytesIO(inner)):
-                              with zipfile.ZipFile(io.BytesIO(inner), "r") as iz:
-                                  for iname in iz.namelist():
-                                      if iname.lower().endswith(".so") or "kernel_blob" in iname.lower():
-                                          scan_bytes(f"{name} -> {iname}", iz.read(iname))
-
-          out_msg = (
-              f"✅ تم فحص ملف ({file_name}) بنجاح!\n\n"
-              f"🧠 ملفات النظام المفحوصة:\n" + ("\n".join(f"- {x}" for x in so_list) or "لا توجد ملفات .so") + "\n\n"
-              f"🌐 الروابط المكتشفة ({len(urls)}):\n" + ("\n".join(f"- {u}" for u in sorted(urls)[:50]) or "لا توجد روابط") + "\n\n"
-              f"🔗 المسارات والـ APIs ({len(apis)}):\n" + ("\n".join(f"- {r}" for r in sorted(apis)[:60]) or "لا توجد مسارات")
-          )
-          send_telegram(out_msg)
+          asyncio.run(main())
           EOF
