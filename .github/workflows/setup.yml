@@ -174,3 +174,13 @@ jobs:
           tg_doc("data/xapk_deep_report.json", "التقرير الكامل لتفكيك XAPK ومسارات التأويل والكتب")
           EOF
           python3 fetch_xapk_by_id.py
+      - name: Print Report on GitHub Screen & Save to data folder
+        run: |
+          if [ -f "data/xapk_deep_report.json" ]; then
+            cat data/xapk_deep_report.json
+            git config user.name "RohAlquranBot"
+            git config user.email "bot@rohalquran.app"
+            git add data/xapk_deep_report.json
+            git diff --staged --quiet || git commit -m "Save XAPK report to repo"
+            git push || true
+          fi
