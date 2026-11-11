@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<body style="font-family:sans-serif;padding:20px;background:#111;color:#0f0;">
+  <h2>اختر ملف الـ XAPK (26MB) من جهازك وسيخرج لك الروابط فوراً بدون رفع ولا إنترنت!</h2>
+  <input type="file" id="f" style="font-size:20px;margin:20px 0;">
+  <button onclick="copyOut()" style="font-size:18px;padding:10px 20px;">📋 نسخ النتيجة</button>
+  <pre id="out" style="background:#222;padding:15px;white-space:pre-wrap;color:#fff;"></pre>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script>
+    document.getElementById('f').onchange = async (e) => {
+      const file = e.target.files[0];
+      const out = document.getElementById('out');
+      out.textContent = "⏳ جاري فتح الملف محلياً على جهازك (ثانيتين فقط)...";
+      
+      const zip = await JSZip.loadAsync(file);
+      let urls = new Set(), apis = new Set(), filesList = [];
+
+      function scanBytes(uint8) {
+        const str = new TextDecoder("ascii").decode(uint8);
+        const uMatch = str.match(/https?:\/\/[a-zA-Z0-9._\/?=&%:-]{6,150}/g) || [];
+        uMatch.forEach(u => {
+          if (!/schemas\.android|w3\.org|google|apache|github|mozilla|flutter\.dev|dart\.dev|dashif|adobe|aomedia|apple|jetbrains/.test(u)) urls.add(u);
+        });
+        const aMatch = str.match(/[a-zA-Z0-9_\/.-]{4,100}(?:sheikho|alamin|tafsir|tawil|taweel|books|audio|quran|api\/|wp-json|supabase|firebase|sqlite|\.db|\.epub|\.mp3)[a-zA-Z0-9_\/.?=&:-]{0,80}/gi) || [];
+        aMatch.forEach(a => { if (!/flutter\/|package:|android\.|java\.|kotlin\./i.test(a)) apis.add(a); });
+      }
+
+      for (const [name, entry] of Object.entries(zip.files)) {
+        filesList.push(name);
+        if (name.endsWith('.apk') && !name.includes('base.apk')) {
+          const innerZip = await JSZip.loadAsync(await entry.async("uint8array"));
+          for (const [iname, ientry] of Object.entries(innerZip.files)) {
+            filesList.push("  -> " + iname);
+            if (iname.endsWith('.so') || iname.endsWith('.dex') || iname.endsWith('.db') || iname.endsWith('.json')) {
+              scanBytes(await ientry.async("uint8array"));
+            }
+          }
+        } else if (name.endsWith('.so') || name.endsWith('.db') || name.endsWith('.json')) {
+          scanBytes(await entry.async("uint8array"));
+        }
+      }
+
+      out.textContent = "📦 الملفات داخل XAPK:\n" + filesList.join("\n") +
+        "\n\n🌐 الروابط (" + urls.size + "):\n" + [...urls].join("\n") +
+        "\n\n🔑 مسارات التأويل والكتب (" + apis.size + "):\n" + [...apis].slice(0, 300).join("\n");
+    };
+
+    function copyOut() {
+      navigator.clipboard.writeText(document.getElementById('out').textContent);
+      alert("تم النسخ! الصقه الآن في المحادثة.");
+    }
+  </script>
+</body>
+</html>
