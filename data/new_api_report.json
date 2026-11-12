@@ -1,0 +1,44 @@
+{
+  "/api/v1/categories": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/categories (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/books": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/books (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/static-info": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/static-info (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/notifications": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/notifications (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/audiobooks": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/audiobooks (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/audio-books": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/audio-books (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/audios": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/audios (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/tafsir": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/tafsir (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/tafsirs": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/tafsirs (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/quran": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/quran (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/verses": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/verses (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/api/v1/surahs": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/surahs (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/public/alamin748965.db": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /public/alamin748965.db (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  },
+  "/alamin748965.db": {
+    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /alamin748965.db (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+  }
+}
