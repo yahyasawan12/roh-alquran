@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html dir="rtl">
 <body style="font-family:sans-serif;padding:20px;background:#111;color:#0f0;">
-  <h2>اختر ملف الـ XAPK (26MB) من جهازك وسيخرج لك الروابط فوراً بدون رفع ولا إنترنت!</h2>
+  <h2>استخراج مسار التأويل وقاعدة البيانات (آمن للنسخ المباشر)</h2>
   <input type="file" id="f" style="font-size:20px;margin:20px 0;">
   <button onclick="copyOut()" style="font-size:18px;padding:10px 20px;">📋 نسخ النتيجة</button>
   <pre id="out" style="background:#222;padding:15px;white-space:pre-wrap;color:#fff;"></pre>
@@ -11,44 +11,48 @@
     document.getElementById('f').onchange = async (e) => {
       const file = e.target.files[0];
       const out = document.getElementById('out');
-      out.textContent = "⏳ جاري فتح الملف محلياً على جهازك (ثانيتين فقط)...";
+      out.textContent = "⏳ جاري البحث عن قاعدة بيانات التأويل ومسارات الـ API...";
       
       const zip = await JSZip.loadAsync(file);
-      let urls = new Set(), apis = new Set(), filesList = [];
-
-      function scanBytes(uint8) {
-        const str = new TextDecoder("ascii").decode(uint8);
-        const uMatch = str.match(/https?:\/\/[a-zA-Z0-9._\/?=&%:-]{6,150}/g) || [];
-        uMatch.forEach(u => {
-          if (!/schemas\.android|w3\.org|google|apache|github|mozilla|flutter\.dev|dart\.dev|dashif|adobe|aomedia|apple|jetbrains/.test(u)) urls.add(u);
-        });
-        const aMatch = str.match(/[a-zA-Z0-9_\/.-]{4,100}(?:sheikho|alamin|tafsir|tawil|taweel|books|audio|quran|api\/|wp-json|supabase|firebase|sqlite|\.db|\.epub|\.mp3)[a-zA-Z0-9_\/.?=&:-]{0,80}/gi) || [];
-        aMatch.forEach(a => { if (!/flutter\/|package:|android\.|java\.|kotlin\./i.test(a)) apis.add(a); });
-      }
+      let nonPageAssets = [], sqlAndTafsir = new Set(), apiPaths = new Set();
 
       for (const [name, entry] of Object.entries(zip.files)) {
-        filesList.push(name);
-        if (name.endsWith('.apk') && !name.includes('base.apk')) {
+        if (name.endsWith('.apk')) {
           const innerZip = await JSZip.loadAsync(await entry.async("uint8array"));
           for (const [iname, ientry] of Object.entries(innerZip.files)) {
-            filesList.push("  -> " + iname);
-            if (iname.endsWith('.so') || iname.endsWith('.dex') || iname.endsWith('.db') || iname.endsWith('.json')) {
-              scanBytes(await ientry.async("uint8array"));
+            if (iname.includes('assets/') && !iname.includes('pages-qcf') && !iname.includes('/fonts/') && !iname.endsWith('.png')) {
+              const data = await ientry.async("uint8array");
+              nonPageAssets.push(iname.replace('assets/flutter_assets/', '') + " (" + data.length + " bytes)");
+            }
+            if (iname.endsWith('libapp.so')) {
+              const bytes = await ientry.async("uint8array");
+              const text = new TextDecoder("ascii").decode(bytes);
+
+              // 1. جميع أوامر SQL أو الجداول المرتبطة بـ alamin748965 و tafsir
+              const m1 = text.match(/[\x20-\x7e]{0,60}(?:SELECT |FROM |TABLE |alamin748965|tafsir|taweel|ayah_text|sura_no|aya_no|books|categories|audiobook)[\x20-\x7e]{0,60}/gi) || [];
+              m1.forEach(s => {
+                if (!/flutter|package:|Widget|Material|Cupertino|State|BuildContext|Audio/i.test(s)) {
+                  sqlAndTafsir.add(s.trim());
+                }
+              });
+
+              // 2. مسارات الـ API التي تبدأ بـ /api أو تحتوي على علامة /
+              const m2 = text.match(/\/(?:api\/v1|books|categories|tafsir|audio|public|storage|uploads)[a-zA-Z0-9_\/.?=&%-]{1,80}/gi) || [];
+              m2.forEach(s => apiPaths.add(s.trim()));
             }
           }
-        } else if (name.endsWith('.so') || name.endsWith('.db') || name.endsWith('.json')) {
-          scanBytes(await entry.async("uint8array"));
         }
       }
 
-      out.textContent = "📦 الملفات داخل XAPK:\n" + filesList.join("\n") +
-        "\n\n🌐 الروابط (" + urls.size + "):\n" + [...urls].join("\n") +
-        "\n\n🔑 مسارات التأويل والكتب (" + apis.size + "):\n" + [...apis].slice(0, 300).join("\n");
+      out.textContent = "نتائج فحص بيانات التطبيق:\n\n" +
+        "1) ملفات الـ Assets غير الصفحات والخطوط:\n" + nonPageAssets.join("\n") +
+        "\n\n2) مسارات السيرفر الفرعية:\n" + [...apiPaths].join("\n") +
+        "\n\n3) استعلامات التأويل وقاعدة البيانات:\n" + [...sqlAndTafsir].slice(0, 180).join("\n");
     };
 
     function copyOut() {
       navigator.clipboard.writeText(document.getElementById('out').textContent);
-      alert("تم النسخ! الصقه الآن في المحادثة.");
+      alert("تم النسخ! يمكنك لصقه في الدردشة بأمان تام.");
     }
   </script>
 </body>
