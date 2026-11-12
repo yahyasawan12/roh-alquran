@@ -1,4 +1,4 @@
-name: Direct Message-ID XAPK Unpacker
+name: Fetch New Alamin API Data Directly to Repo
 
 on:
   push:
@@ -7,180 +7,100 @@ on:
   workflow_dispatch:
 
 jobs:
-  unpack-xapk:
+  fetch-api:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python & Telethon
-        run: pip install requests telethon
+      - name: Install requests
+        run: pip install requests
 
-      - name: Fetch 26MB XAPK by Message ID & Extract APIs
-        env:
-          BOT_TOKEN: ${{ secrets.BO_TOKEN }}
-          ADMIN_ID: "5205216077"
+      - name: Pull Books, Categories & Tafsir from new.alamin-library.com
         run: |
-          cat << 'EOF' > fetch_xapk_by_id.py
-          import os, re, io, json, zipfile, asyncio
-          import requests
-          from telethon import TelegramClient
-          from telethon.tl import functions, types
-
-          TOKEN = os.environ.get("BOT_TOKEN", "").strip()
-          ADMIN_ID = os.environ.get("ADMIN_ID", "5205216077").strip()
-
-          def tg_msg(text):
-              for i in range(0, len(text), 3900):
-                  requests.post(
-                      f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                      json={"chat_id": ADMIN_ID, "text": text[i:i+3900]},
-                      timeout=20
-                  )
-
-          def tg_doc(path, caption):
-              with open(path, "rb") as f:
-                  requests.post(
-                      f"https://api.telegram.org/bot{TOKEN}/sendDocument",
-                      data={"chat_id": ADMIN_ID, "caption": caption},
-                      files={"document": f},
-                      timeout=30
-                  )
-
-          # 1. استخراج رقم الرسالة (message_id) التي تحتوي على ملف 26.2MB من getUpdates
-          up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?limit=100", timeout=20).json()
-          target_msg_id = None
-          doc_name = "unknown.xapk"
-          doc_size = 0
-
-          for item in reversed(up.get("result", [])):
-              msg = item.get("message") or item.get("channel_post") or {}
-              doc = msg.get("document")
-              if doc and doc.get("file_size", 0) > 16000000:
-                  target_msg_id = msg.get("message_id")
-                  doc_name = doc.get("file_name", "app.xapk")
-                  doc_size = doc.get("file_size", 0)
-                  break
-
-          # إذا لم يجد ملفاً أكبر من 16MB يأخذ آخر ملف مرسل
-          if not target_msg_id:
-              for item in reversed(up.get("result", [])):
-                  msg = item.get("message") or item.get("channel_post") or {}
-                  doc = msg.get("document")
-                  if doc:
-                      target_msg_id = msg.get("message_id")
-                      doc_name = doc.get("file_name", "app.xapk")
-                      doc_size = doc.get("file_size", 0)
-                      break
-
-          if not target_msg_id:
-              tg_msg("⚠️ لم يتم العثور على رقم رسالة الملف في getUpdates. يرجى إعادة توجيه (Forward) ملف الـ XAPK داخل محادثة البوت مرة واحدة.")
-              exit()
-
-          tg_msg(f"✅ تم تحديد موقع الملف في المحادثة!\n📄 الاسم: {doc_name}\n📦 الحجم: {round(doc_size/1048576, 2)} MB\n🔢 رقم الرسالة: {target_msg_id}\n\n⏳ جاري سحب الملف الكامل عبر MTProto وتفكيك ملفات الـ APK الداخلية...")
-
-          xapk_path = "full_app.xapk"
-
-          async def download_by_msg_id():
-              client = TelegramClient("bot_mtproto", 6, "eb06d4abfb49dc3eeb1aeb98ae0f581e")
-              await client.start(bot_token=TOKEN)
-              res = await client(functions.messages.GetMessagesRequest(
-                  id=[types.InputMessageID(id=int(target_msg_id))]
-              ))
-              if res and res.messages and res.messages[0]:
-                  await client.download_media(res.messages[0], file=xapk_path)
-              await client.disconnect()
-
-          try:
-              asyncio.run(download_by_msg_id())
-          except Exception as e:
-              tg_msg(f"⚠️ خطأ أثناء التحميل عبر MTProto: {e}")
-              exit()
-
-          if not os.path.exists(xapk_path) or os.path.getsize(xapk_path) < 100000:
-              tg_msg("⚠️ لم يكتمل تحميل الملف على السيرفر.")
-              exit()
-
-          top_files = []
-          inner_files = []
-          urls_found = set()
-          api_strings = set()
-
-          def inspect_binary(tag, raw):
-              # 1. جميع الروابط
-              for m in re.findall(rb'https?://[a-zA-Z0-9._/?=&%:-]{6,180}', raw):
-                  u = m.decode("utf-8", errors="ignore")
-                  if not any(ig in u for ig in [
-                      "schemas.android", "w3.org", "google.com", "googleapis.com",
-                      "apache.org", "github.com", "mozilla.org", "flutter.dev", "dart.dev",
-                      "dashif.org", "adobe.com", "aomedia.org", "apple.com", "jetbrains.com"
-                  ]):
-                      urls_found.add(u)
-
-              # 2. جميع النصوص البرمجية المرتبطة بالسيرفر أو التأويل أو الكتب داخل libapp.so
-              for m in re.findall(rb'[\x20-\x7e]{6,140}', raw):
-                  s = m.decode("ascii", errors="ignore").strip()
-                  low_s = s.lower()
-                  if any(k in low_s for k in [
-                      "sheikho", "alamin", "tafsir", "tawil", "taweel", "interpret",
-                      "wp-json", "/api/", "supabase", "firebase", "firestore",
-                      "digitalocean", "amazonaws", "cloudflare", ".sqlite", ".db", ".epub", ".mp3",
-                      "audio", "book", "surah", "ayah", "verse"
-                  ]):
-                      if not any(skip in low_s for skip in [
-                          "flutter/", "package:", "android.", "androidx.", "java.", "kotlin.",
-                          "facebook", "オーディオ", "material", "cupertino", "widget"
-                      ]):
-                          if len(s) < 120:
-                              api_strings.add(s)
-
-          with zipfile.ZipFile(xapk_path, "r") as z:
-              for name in z.namelist():
-                  sz = z.getinfo(name).file_size
-                  top_files.append(f"{name} ({round(sz/1048576, 2)} MB)")
-                  data = z.read(name)
-                  if name.lower().endswith(".so"):
-                      inspect_binary(name, data)
-                  elif name.lower().endswith(".apk") and zipfile.is_zipfile(io.BytesIO(data)):
-                      with zipfile.ZipFile(io.BytesIO(data), "r") as iz:
-                          for iname in iz.namelist():
-                              isz = iz.getinfo(iname).file_size
-                              if iname.lower().endswith((".so", ".db", ".sqlite", ".epub", ".json")) and "pages-qcf" not in iname:
-                                  inner_files.append(f"{name} -> {iname} ({round(isz/1024, 1)} KB)")
-                              if iname.lower().endswith(".so") or (iname.lower().endswith(".dex") and "base" not in name.lower()):
-                                  inspect_binary(f"{name}:{iname}", iz.read(iname))
-                              elif iname.lower().endswith(".dex"):
-                                  inspect_binary(f"{name}:{iname}", iz.read(iname))
-
-          report_data = {
-              "xapk_top_files": top_files,
-              "important_inner_files": inner_files,
-              "discovered_urls": sorted(list(urls_found)),
-              "api_and_data_strings": sorted(list(api_strings))[:400]
-          }
+          python3 - << 'EOF'
+          import os, json, requests
 
           os.makedirs("data", exist_ok=True)
-          with open("data/xapk_deep_report.json", "w", encoding="utf-8") as f:
-              json.dump(report_data, f, ensure_ascii=False, indent=2)
+          base = "https://new.alamin-library.com"
+          headers = {
+              "User-Agent": "Dart/3.3 (dart:io)",
+              "Accept": "application/json"
+          }
 
-          summary_txt = (
-              f"🎉 اكتمل تفكيك ملف ({doc_name}) بالكامل!\n\n"
-              f"📦 محتويات الـ XAPK الرئيسية:\n" + "\n".join(f"- {x}" for x in top_files) + "\n\n"
-              f"🧠 أهم الملفات الداخلية:\n" + "\n".join(f"- {x}" for x in inner_files[:25]) + "\n\n"
-              f"🌐 الروابط المكتشفة ({len(urls_found)}):\n" + ("\n".join(f"- {u}" for u in sorted(urls_found)[:50]) or "لا توجد روابط إضافية") + "\n\n"
-              f"🔑 أهم مسارات التأويل والكتب والسيرفر ({len(api_strings)}):\n" + "\n".join(f"- {s}" for s in sorted(api_strings)[:60])
-          )
-          tg_msg(summary_txt)
-          tg_doc("data/xapk_deep_report.json", "التقرير الكامل لتفكيك XAPK ومسارات التأويل والكتب")
+          endpoints = [
+              "/api/v1/categories",
+              "/api/v1/books",
+              "/api/v1/static-info",
+              "/api/v1/notifications",
+              "/api/v1/audiobooks",
+              "/api/v1/audio-books",
+              "/api/v1/audios",
+              "/api/v1/tafsir",
+              "/api/v1/tafsirs",
+              "/api/v1/quran",
+              "/api/v1/verses",
+              "/api/v1/surahs",
+              "/public/alamin748965.db",
+              "/alamin748965.db"
+          ]
+
+          report = {}
+          for ep in endpoints:
+              url = base + ep
+              try:
+                  r = requests.get(url, headers=headers, timeout=25)
+                  ct = r.headers.get("Content-Type", "")
+                  info = {"status": r.status_code, "size": len(r.content), "content_type": ct}
+                  if r.status_code == 200:
+                      if "json" in ct or r.text.strip().startswith(("{", "[")):
+                          data = r.json()
+                          safe_name = ep.strip("/").replace("/", "_") + ".json"
+                          with open(f"data/{safe_name}", "w", encoding="utf-8") as f:
+                              json.dump(data, f, ensure_ascii=False, indent=2)
+                          info["saved_to"] = f"data/{safe_name}"
+                          info["preview"] = r.text[:600]
+                      elif len(r.content) > 1000 and ep.endswith(".db"):
+                          with open("data/alamin748965.db", "wb") as f:
+                              f.write(r.content)
+                          info["saved_to"] = "data/alamin748965.db"
+                      else:
+                          info["preview"] = r.text[:300]
+                  report[ep] = info
+              except Exception as e:
+                  report[ep] = {"error": str(e)}
+
+          # إذا تم جلب الكتب من /api/v1/books نفحص تفاصيل كتاب واحد لمعرفة هيكل النصوص والصوتيات
+          if os.path.exists("data/api_v1_books.json"):
+              try:
+                  with open("data/api_v1_books.json", "r", encoding="utf-8") as f:
+                      bdata = json.load(f)
+                  report["books_structure_keys"] = list(bdata.keys()) if isinstance(bdata, dict) else "list"
+                  items = bdata.get("data", bdata) if isinstance(bdata, dict) else bdata
+                  if isinstance(items, dict) and "books" in items:
+                      items = items["books"]
+                  if isinstance(items, list) and len(items) > 0:
+                      first_id = items[0].get("id")
+                      if first_id:
+                          r_detail = requests.get(f"{base}/api/v1/books/{first_id}", headers=headers, timeout=20)
+                          report[f"/api/v1/books/{first_id}"] = {
+                              "status": r_detail.status_code,
+                              "preview": r_detail.text[:1000]
+                          }
+              except Exception as e:
+                  report["books_parse_note"] = str(e)
+
+          with open("data/new_api_report.json", "w", encoding="utf-8") as f:
+              json.dump(report, f, ensure_ascii=False, indent=2)
+
+          print("=== NEW API REPORT ===")
+          print(json.dumps(report, ensure_ascii=False, indent=2))
           EOF
-          python3 fetch_xapk_by_id.py
-      - name: Print Report on GitHub Screen & Save to data folder
+
+      - name: Commit Fetched Data to Repository
         run: |
-          if [ -f "data/xapk_deep_report.json" ]; then
-            cat data/xapk_deep_report.json
-            git config user.name "RohAlquranBot"
-            git config user.email "bot@rohalquran.app"
-            git add data/xapk_deep_report.json
-            git diff --staged --quiet || git commit -m "Save XAPK report to repo"
-            git push || true
-          fi
+          git config user.name "RohAlquranBot"
+          git config user.email "bot@rohalquran.app"
+          git add data/
+          git diff --staged --quiet || git commit -m "Save fetched API data from new.alamin-library.com"
+          git push
