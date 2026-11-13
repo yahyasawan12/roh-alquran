@@ -1,44 +1,81 @@
 {
   "/api/v1/categories": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/categories (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 200,
+    "size": 12133,
+    "content_type": "application/json",
+    "saved_to": "data/api_v1_categories.json",
+    "preview": "{\"success\":true,\"data\":[{\"id\":2,\"name\":\"\\u062a\\u0623\\u0648\\u064a\\u0644 \\u0627\\u0644\\u0642\\u0631\\u0622\\u0646 \\u0627\\u0644\\u0639\\u0638\\u064a\\u0645\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"ar\",\"sort_order\":0,\"books_count\":16,\"created_at\":\"2024-01-06T20:03:43.000000Z\",\"updated_at\":\"2026-07-30T14:03:50.000000Z\"},{\"id\":131,\"name\":\"Interpretation of the Holy Qur\\u2019an\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"en\",\"sort_order\":0,\"books_count\":2,\"created_at\":\"2024-04-27T18:59:20.000000Z\",\"updated_at\":\"2024-04-27T18:59:20.000000Z\"},{\"id\":132,\"name\":\"Pillars of Islam\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"en\",\"sort_order\":0,\"books_count\":3,\"created_at\":\"2024-04-27T18:59:52.000000Z\",\"updated_at\":\"2024-04-27T18:59:52.000000Z\"},{\"id\":133,\"name\":\"Islamic Studies\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"en\",\"sort_order\":0,\"books_count\":5,\"created_at\":\"2024-04-27T19:00:"
   },
   "/api/v1/books": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/books (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 200,
+    "size": 616366,
+    "content_type": "application/json",
+    "saved_to": "data/api_v1_books.json",
+    "preview": "{\"success\":true,\"data\":[{\"id\":500,\"cat_id\":102,\"name\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"title\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1787728933_22.jpg\",\"url\":\"http:\\/\\/alamin-library.com\\/audiobooks\\/anwar\\/06.mp3\",\"file_name\":\"06.mp3\",\"folder\":\"juzuamma\",\"album\":\"\\u0623\\u0646\\u0648\\u0627\\u0631 \\u0627\\u0644\\u0639\\u0627\\u0644\\u0645\",\"is_audio\":true,\"is_asset\":false,\"sort_order\":0,\"category\":{\"id\":102,\"name\":\"\\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"icon\":null,\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1785419899_amma.jpg\",\"is_audio\":true,\"is_asset\":true,\"language\":\"ar\",\"sort_order\":5,\"created_at\":\"2024-01-07T12:41:32.000000Z\",\"updated_at\":\"2026-08-21T07:17:58.000000Z\"},\"created_at\":null,\"updated_at\":\"2026-08-26T07:22:13.000000Z\"},{\"id\":539,\"cat_id\":103,\"name\":\"\\u06"
+  },
+  "/api/v1/books?per_page=500": {
+    "status": 200,
+    "size": 616366,
+    "content_type": "application/json",
+    "saved_to": "data/api_v1_books_per_page_500.json",
+    "preview": "{\"success\":true,\"data\":[{\"id\":500,\"cat_id\":102,\"name\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"title\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1787728933_22.jpg\",\"url\":\"http:\\/\\/alamin-library.com\\/audiobooks\\/anwar\\/06.mp3\",\"file_name\":\"06.mp3\",\"folder\":\"juzuamma\",\"album\":\"\\u0623\\u0646\\u0648\\u0627\\u0631 \\u0627\\u0644\\u0639\\u0627\\u0644\\u0645\",\"is_audio\":true,\"is_asset\":false,\"sort_order\":0,\"category\":{\"id\":102,\"name\":\"\\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"icon\":null,\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1785419899_amma.jpg\",\"is_audio\":true,\"is_asset\":true,\"language\":\"ar\",\"sort_order\":5,\"created_at\":\"2024-01-07T12:41:32.000000Z\",\"updated_at\":\"2026-08-21T07:17:58.000000Z\"},\"created_at\":null,\"updated_at\":\"2026-08-26T07:22:13.000000Z\"},{\"id\":539,\"cat_id\":103,\"name\":\"\\u06"
   },
   "/api/v1/static-info": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/static-info (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 200,
+    "size": 135728,
+    "content_type": "application/json",
+    "saved_to": "data/api_v1_static-info.json",
+    "preview": "{\"success\":true,\"data\":[{\"id\":1,\"language\":\"ar\",\"name\":\"\\u062d\\u0648\\u0644 \\u0627\\u0644\\u062a\\u0637\\u0628\\u064a\\u0642\",\"content\":\"<h2 style=\\\"text-align:justify\\\">\\u062d\\u0648\\u0644 \\u0627\\u0644\\u062a\\u0637\\u0628\\u064a\\u0642<\\/h2>\\r\\n\\r\\n<p style=\\\"text-align:justify\\\">- \\u064a\\u062a\\u0634\\u0631\\u0641 \\u0627\\u0644\\u062a\\u0637\\u0628\\u064a\\u0642 \\u0628\\u062a\\u0642\\u062f\\u064a\\u0645 \\u0646\\u0635 \\u0627\\u0644\\u0642\\u0631\\u0622\\u0646 \\u0627\\u0644\\u0643\\u0631\\u064a\\u0645\\u060c \\u0645\\u0631\\u0641\\u0642\\u0627\\u064b \\u0628\\u062a\\u0623\\u0648\\u064a\\u0644\\u0647 \\u0627\\u0644\\u0639\\u0638\\u064a\\u0645\\u060c \\u0627\\u0644\\u0645\\u0646\\u0642\\u0648\\u0644 \\u0645\\u0646 \\u0633\\u0644\\u0633\\u0644\\u0629 \\u0643\\u062a\\u0628 \\u062a\\u0623\\u0648\\u064a\\u0644 \\u0627\\u0644\\u0642\\u0631\\u0622\\u0646 \\u0627\\u0644\\u0639\\u0638\\u064a\\u0645\\u060c \\u0644\\u0644\\u0639\\u0644\\u0627\\u0645\\u0629 \\u0627\\u0644\\u0625\\u0646\\u0633\\u0627\\u0646\\u064a \\u0627\\u0644\\u062c\\u0644\\u064a\\u0644 \\u0645\\u062d\\u0645\\u062f \\u0623\\u0645\\u064a\\u0646 \\u063"
   },
   "/api/v1/notifications": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/notifications (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 200,
+    "size": 26,
+    "content_type": "application/json",
+    "saved_to": "data/api_v1_notifications.json",
+    "preview": "{\"success\":true,\"data\":[]}"
   },
   "/api/v1/audiobooks": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/audiobooks (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 404,
+    "size": 68,
+    "content_type": "application/json",
+    "response_snippet": "{\n    \"message\": \"The route api/v1/audiobooks could not be found.\"\n}"
   },
   "/api/v1/audio-books": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/audio-books (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 404,
+    "size": 69,
+    "content_type": "application/json",
+    "response_snippet": "{\n    \"message\": \"The route api/v1/audio-books could not be found.\"\n}"
   },
   "/api/v1/audios": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/audios (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 404,
+    "size": 64,
+    "content_type": "application/json",
+    "response_snippet": "{\n    \"message\": \"The route api/v1/audios could not be found.\"\n}"
   },
   "/api/v1/tafsir": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/tafsir (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 404,
+    "size": 64,
+    "content_type": "application/json",
+    "response_snippet": "{\n    \"message\": \"The route api/v1/tafsir could not be found.\"\n}"
   },
   "/api/v1/tafsirs": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/tafsirs (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 404,
+    "size": 65,
+    "content_type": "application/json",
+    "response_snippet": "{\n    \"message\": \"The route api/v1/tafsirs could not be found.\"\n}"
   },
   "/api/v1/quran": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/quran (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
-  },
-  "/api/v1/verses": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/verses (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
-  },
-  "/api/v1/surahs": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /api/v1/surahs (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 404,
+    "size": 63,
+    "content_type": "application/json",
+    "response_snippet": "{\n    \"message\": \"The route api/v1/quran could not be found.\"\n}"
   },
   "/public/alamin748965.db": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /public/alamin748965.db (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
+    "status": 404,
+    "size": 6586,
+    "content_type": "text/html; charset=utf-8",
+    "response_snippet": "<!DOCTYPE html>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\n        <title>Not Found</title>\n\n        <style>\n            /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{line"
   },
-  "/alamin748965.db": {
-    "error": "HTTPSConnectionPool(host='new.alamin-library.com', port=443): Max retries exceeded with url: /alamin748965.db (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)')))"
-  }
+  "categories_sample": "{'success': True, 'data': [{'id': 2, 'name': 'تأويل القرآن العظيم', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'ar', 'sort_order': 0, 'books_count': 16, 'created_at': '2024-01-06T20:03:43.000000Z', 'updated_at': '2026-07-30T14:03:50.000000Z'}, {'id': 131, 'name': 'Interpretation of the Holy Qur’an', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'en', 'sort_order': 0, 'books_count': 2, 'created_at': '2024-04-27T18:59:20.000000Z', 'updated_at': '2024-04-27T18:59:20.000000Z'}, {'id': 132, 'name': 'Pillars of Islam', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'en', 'sort_order': 0, 'books_count': 3, 'created_at': '2024-04-27T18:59:52.000000Z', 'updated_at': '2024-04-27T18:59:52.000000Z'}, {'id': 133, 'name': 'Islamic Studies', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'en', 'sort_order': 0, 'books_count': 5, 'created_at': '2024-04-27T19:00:37",
+  "books_sample": "{'success': True, 'data': [{'id': 500, 'cat_id': 102, 'name': 'أنشودة - تأويل جزء عم', 'title': 'أنشودة - تأويل جزء عم', 'image_url': 'https://new.alamin-library.com/media/1787728933_22.jpg', 'url': 'http://alamin-library.com/audiobooks/anwar/06.mp3', 'file_name': '06.mp3', 'folder': 'juzuamma', 'album': 'أنوار العالم', 'is_audio': True, 'is_asset': False, 'sort_order': 0, 'category': {'id': 102, 'name': 'تأويل جزء عم', 'icon': None, 'image_url': 'https://new.alamin-library.com/media/1785419899_amma.jpg', 'is_audio': True, 'is_asset': True, 'language': 'ar', 'sort_order': 5, 'created_at': '2024-01-07T12:41:32.000000Z', 'updated_at': '2026-08-21T07:17:58.000000Z'}, 'created_at': None, 'updated_at': '2026-08-26T07:22:13.000000Z'}, {'id': 539, 'cat_id': 103, 'name': 'حقيقة سيدنا محمد ﷺ \"تظهر في القرن العشرين\"', 'title': 'أنشودة-عظم المقام', 'image_url': 'https://new.alamin-library.com/media/1787558835_22.jpg', 'url': 'http://alamin-library.com/audiobooks/anwar/13.mp3', 'file_name': '13.mp3', 'folder': 'anwar', 'album': 'أنوار العالم', 'is_audio': True, 'is_asset': False, 'sort_order': 0, 'category': {'id': 103, 'name': 'حقيقة سيدنا محمد ﷺ', 'icon': None, 'image_url': 'https://new.alamin-library.com/media/1785420029_hakikah.jpg', 'is_audio': True, 'is_asset': True, 'language': 'ar', 'sort_order': 11, 'created_at': '2024-01-07T12:42:06.000000Z', 'updated_at': '2026-08-21T07:17:58.000000Z'}, 'created_at': None, 'updated_at': '2026-08-24T08:07:15.000000Z'}, {'id': 540, 'cat_id': 103"
 }
