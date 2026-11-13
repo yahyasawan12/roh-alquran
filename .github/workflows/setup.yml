@@ -1,4 +1,4 @@
-name: Fetch New Alamin API Data Directly to Repo
+name: Bypass Expired SSL & Fetch Alamin API
 
 on:
   push:
@@ -7,19 +7,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  fetch-api:
+  fetch-api-nossl:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install requests
-        run: pip install requests
+        run: pip install requests urllib3
 
-      - name: Pull Books, Categories & Tafsir from new.alamin-library.com
+      - name: Pull Books, Categories & Tafsir (verify=False)
         run: |
           python3 - << 'EOF'
-          import os, json, requests
+          import os, json, requests, urllib3
+          urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
           os.makedirs("data", exist_ok=True)
           base = "https://new.alamin-library.com"
@@ -31,6 +32,7 @@ jobs:
           endpoints = [
               "/api/v1/categories",
               "/api/v1/books",
+              "/api/v1/books?per_page=500",
               "/api/v1/static-info",
               "/api/v1/notifications",
               "/api/v1/audiobooks",
@@ -39,61 +41,57 @@ jobs:
               "/api/v1/tafsir",
               "/api/v1/tafsirs",
               "/api/v1/quran",
-              "/api/v1/verses",
-              "/api/v1/surahs",
-              "/public/alamin748965.db",
-              "/alamin748965.db"
+              "/public/alamin748965.db"
           ]
 
           report = {}
           for ep in endpoints:
               url = base + ep
               try:
-                  r = requests.get(url, headers=headers, timeout=25)
+                  r = requests.get(url, headers=headers, timeout=30, verify=False)
                   ct = r.headers.get("Content-Type", "")
                   info = {"status": r.status_code, "size": len(r.content), "content_type": ct}
                   if r.status_code == 200:
                       if "json" in ct or r.text.strip().startswith(("{", "[")):
                           data = r.json()
-                          safe_name = ep.strip("/").replace("/", "_") + ".json"
+                          safe_name = ep.strip("/").replace("/", "_").replace("?", "_").replace("=", "_") + ".json"
                           with open(f"data/{safe_name}", "w", encoding="utf-8") as f:
                               json.dump(data, f, ensure_ascii=False, indent=2)
                           info["saved_to"] = f"data/{safe_name}"
-                          info["preview"] = r.text[:600]
+                          info["preview"] = r.text[:1000]
                       elif len(r.content) > 1000 and ep.endswith(".db"):
                           with open("data/alamin748965.db", "wb") as f:
                               f.write(r.content)
                           info["saved_to"] = "data/alamin748965.db"
                       else:
-                          info["preview"] = r.text[:300]
+                          info["preview"] = r.text[:400]
+                  else:
+                      info["response_snippet"] = r.text[:300]
                   report[ep] = info
               except Exception as e:
                   report[ep] = {"error": str(e)}
 
-          # إذا تم جلب الكتب من /api/v1/books نفحص تفاصيل كتاب واحد لمعرفة هيكل النصوص والصوتيات
+          # فحص تفاصيل أول تصنيف وأول كتاب لمعرفة المسارات الفرعية الكاملة
+          if os.path.exists("data/api_v1_categories.json"):
+              try:
+                  with open("data/api_v1_categories.json", "r", encoding="utf-8") as f:
+                      cdata = json.load(f)
+                  report["categories_sample"] = str(cdata)[:1000]
+              except Exception as e:
+                  report["categories_err"] = str(e)
+
           if os.path.exists("data/api_v1_books.json"):
               try:
                   with open("data/api_v1_books.json", "r", encoding="utf-8") as f:
                       bdata = json.load(f)
-                  report["books_structure_keys"] = list(bdata.keys()) if isinstance(bdata, dict) else "list"
-                  items = bdata.get("data", bdata) if isinstance(bdata, dict) else bdata
-                  if isinstance(items, dict) and "books" in items:
-                      items = items["books"]
-                  if isinstance(items, list) and len(items) > 0:
-                      first_id = items[0].get("id")
-                      if first_id:
-                          r_detail = requests.get(f"{base}/api/v1/books/{first_id}", headers=headers, timeout=20)
-                          report[f"/api/v1/books/{first_id}"] = {
-                              "status": r_detail.status_code,
-                              "preview": r_detail.text[:1000]
-                          }
+                  report["books_sample"] = str(bdata)[:1500]
               except Exception as e:
-                  report["books_parse_note"] = str(e)
+                  report["books_err"] = str(e)
 
           with open("data/new_api_report.json", "w", encoding="utf-8") as f:
               json.dump(report, f, ensure_ascii=False, indent=2)
 
-          print("=== NEW API REPORT ===")
+          print("=== SUCCESSFUL API REPORT ===")
           print(json.dumps(report, ensure_ascii=False, indent=2))
           EOF
 
@@ -102,5 +100,5 @@ jobs:
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
           git add data/
-          git diff --staged --quiet || git commit -m "Save fetched API data from new.alamin-library.com"
+          git diff --staged --quiet || git commit -m "Save fetched API data bypassing expired SSL"
           git push
