@@ -1,81 +1,634 @@
 {
-  "/api/v1/categories": {
-    "status": 200,
-    "size": 12133,
-    "content_type": "application/json",
-    "saved_to": "data/api_v1_categories.json",
-    "preview": "{\"success\":true,\"data\":[{\"id\":2,\"name\":\"\\u062a\\u0623\\u0648\\u064a\\u0644 \\u0627\\u0644\\u0642\\u0631\\u0622\\u0646 \\u0627\\u0644\\u0639\\u0638\\u064a\\u0645\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"ar\",\"sort_order\":0,\"books_count\":16,\"created_at\":\"2024-01-06T20:03:43.000000Z\",\"updated_at\":\"2026-07-30T14:03:50.000000Z\"},{\"id\":131,\"name\":\"Interpretation of the Holy Qur\\u2019an\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"en\",\"sort_order\":0,\"books_count\":2,\"created_at\":\"2024-04-27T18:59:20.000000Z\",\"updated_at\":\"2024-04-27T18:59:20.000000Z\"},{\"id\":132,\"name\":\"Pillars of Islam\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"en\",\"sort_order\":0,\"books_count\":3,\"created_at\":\"2024-04-27T18:59:52.000000Z\",\"updated_at\":\"2024-04-27T18:59:52.000000Z\"},{\"id\":133,\"name\":\"Islamic Studies\",\"icon\":\"\",\"image_url\":null,\"is_audio\":false,\"is_asset\":false,\"language\":\"en\",\"sort_order\":0,\"books_count\":5,\"created_at\":\"2024-04-27T19:00:"
+  "total_categories": 38,
+  "categories_by_language": {
+    "ar": 23,
+    "en": 9,
+    "fr": 6
   },
-  "/api/v1/books": {
-    "status": 200,
-    "size": 616366,
-    "content_type": "application/json",
-    "saved_to": "data/api_v1_books.json",
-    "preview": "{\"success\":true,\"data\":[{\"id\":500,\"cat_id\":102,\"name\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"title\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1787728933_22.jpg\",\"url\":\"http:\\/\\/alamin-library.com\\/audiobooks\\/anwar\\/06.mp3\",\"file_name\":\"06.mp3\",\"folder\":\"juzuamma\",\"album\":\"\\u0623\\u0646\\u0648\\u0627\\u0631 \\u0627\\u0644\\u0639\\u0627\\u0644\\u0645\",\"is_audio\":true,\"is_asset\":false,\"sort_order\":0,\"category\":{\"id\":102,\"name\":\"\\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"icon\":null,\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1785419899_amma.jpg\",\"is_audio\":true,\"is_asset\":true,\"language\":\"ar\",\"sort_order\":5,\"created_at\":\"2024-01-07T12:41:32.000000Z\",\"updated_at\":\"2026-08-21T07:17:58.000000Z\"},\"created_at\":null,\"updated_at\":\"2026-08-26T07:22:13.000000Z\"},{\"id\":539,\"cat_id\":103,\"name\":\"\\u06"
-  },
-  "/api/v1/books?per_page=500": {
-    "status": 200,
-    "size": 616366,
-    "content_type": "application/json",
-    "saved_to": "data/api_v1_books_per_page_500.json",
-    "preview": "{\"success\":true,\"data\":[{\"id\":500,\"cat_id\":102,\"name\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"title\":\"\\u0623\\u0646\\u0634\\u0648\\u062f\\u0629 - \\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1787728933_22.jpg\",\"url\":\"http:\\/\\/alamin-library.com\\/audiobooks\\/anwar\\/06.mp3\",\"file_name\":\"06.mp3\",\"folder\":\"juzuamma\",\"album\":\"\\u0623\\u0646\\u0648\\u0627\\u0631 \\u0627\\u0644\\u0639\\u0627\\u0644\\u0645\",\"is_audio\":true,\"is_asset\":false,\"sort_order\":0,\"category\":{\"id\":102,\"name\":\"\\u062a\\u0623\\u0648\\u064a\\u0644 \\u062c\\u0632\\u0621 \\u0639\\u0645\",\"icon\":null,\"image_url\":\"https:\\/\\/new.alamin-library.com\\/media\\/1785419899_amma.jpg\",\"is_audio\":true,\"is_asset\":true,\"language\":\"ar\",\"sort_order\":5,\"created_at\":\"2024-01-07T12:41:32.000000Z\",\"updated_at\":\"2026-08-21T07:17:58.000000Z\"},\"created_at\":null,\"updated_at\":\"2026-08-26T07:22:13.000000Z\"},{\"id\":539,\"cat_id\":103,\"name\":\"\\u06"
-  },
-  "/api/v1/static-info": {
-    "status": 200,
-    "size": 135728,
-    "content_type": "application/json",
-    "saved_to": "data/api_v1_static-info.json",
-    "preview": "{\"success\":true,\"data\":[{\"id\":1,\"language\":\"ar\",\"name\":\"\\u062d\\u0648\\u0644 \\u0627\\u0644\\u062a\\u0637\\u0628\\u064a\\u0642\",\"content\":\"<h2 style=\\\"text-align:justify\\\">\\u062d\\u0648\\u0644 \\u0627\\u0644\\u062a\\u0637\\u0628\\u064a\\u0642<\\/h2>\\r\\n\\r\\n<p style=\\\"text-align:justify\\\">- \\u064a\\u062a\\u0634\\u0631\\u0641 \\u0627\\u0644\\u062a\\u0637\\u0628\\u064a\\u0642 \\u0628\\u062a\\u0642\\u062f\\u064a\\u0645 \\u0646\\u0635 \\u0627\\u0644\\u0642\\u0631\\u0622\\u0646 \\u0627\\u0644\\u0643\\u0631\\u064a\\u0645\\u060c \\u0645\\u0631\\u0641\\u0642\\u0627\\u064b \\u0628\\u062a\\u0623\\u0648\\u064a\\u0644\\u0647 \\u0627\\u0644\\u0639\\u0638\\u064a\\u0645\\u060c \\u0627\\u0644\\u0645\\u0646\\u0642\\u0648\\u0644 \\u0645\\u0646 \\u0633\\u0644\\u0633\\u0644\\u0629 \\u0643\\u062a\\u0628 \\u062a\\u0623\\u0648\\u064a\\u0644 \\u0627\\u0644\\u0642\\u0631\\u0622\\u0646 \\u0627\\u0644\\u0639\\u0638\\u064a\\u0645\\u060c \\u0644\\u0644\\u0639\\u0644\\u0627\\u0645\\u0629 \\u0627\\u0644\\u0625\\u0646\\u0633\\u0627\\u0646\\u064a \\u0627\\u0644\\u062c\\u0644\\u064a\\u0644 \\u0645\\u062d\\u0645\\u062f \\u0623\\u0645\\u064a\\u0646 \\u063"
-  },
-  "/api/v1/notifications": {
-    "status": 200,
-    "size": 26,
-    "content_type": "application/json",
-    "saved_to": "data/api_v1_notifications.json",
-    "preview": "{\"success\":true,\"data\":[]}"
-  },
-  "/api/v1/audiobooks": {
-    "status": 404,
-    "size": 68,
-    "content_type": "application/json",
-    "response_snippet": "{\n    \"message\": \"The route api/v1/audiobooks could not be found.\"\n}"
-  },
-  "/api/v1/audio-books": {
-    "status": 404,
-    "size": 69,
-    "content_type": "application/json",
-    "response_snippet": "{\n    \"message\": \"The route api/v1/audio-books could not be found.\"\n}"
-  },
-  "/api/v1/audios": {
-    "status": 404,
-    "size": 64,
-    "content_type": "application/json",
-    "response_snippet": "{\n    \"message\": \"The route api/v1/audios could not be found.\"\n}"
-  },
-  "/api/v1/tafsir": {
-    "status": 404,
-    "size": 64,
-    "content_type": "application/json",
-    "response_snippet": "{\n    \"message\": \"The route api/v1/tafsir could not be found.\"\n}"
-  },
-  "/api/v1/tafsirs": {
-    "status": 404,
-    "size": 65,
-    "content_type": "application/json",
-    "response_snippet": "{\n    \"message\": \"The route api/v1/tafsirs could not be found.\"\n}"
-  },
-  "/api/v1/quran": {
-    "status": 404,
-    "size": 63,
-    "content_type": "application/json",
-    "response_snippet": "{\n    \"message\": \"The route api/v1/quran could not be found.\"\n}"
-  },
-  "/public/alamin748965.db": {
-    "status": 404,
-    "size": 6586,
-    "content_type": "text/html; charset=utf-8",
-    "response_snippet": "<!DOCTYPE html>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\n        <title>Not Found</title>\n\n        <style>\n            /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{line"
-  },
-  "categories_sample": "{'success': True, 'data': [{'id': 2, 'name': 'تأويل القرآن العظيم', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'ar', 'sort_order': 0, 'books_count': 16, 'created_at': '2024-01-06T20:03:43.000000Z', 'updated_at': '2026-07-30T14:03:50.000000Z'}, {'id': 131, 'name': 'Interpretation of the Holy Qur’an', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'en', 'sort_order': 0, 'books_count': 2, 'created_at': '2024-04-27T18:59:20.000000Z', 'updated_at': '2024-04-27T18:59:20.000000Z'}, {'id': 132, 'name': 'Pillars of Islam', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'en', 'sort_order': 0, 'books_count': 3, 'created_at': '2024-04-27T18:59:52.000000Z', 'updated_at': '2024-04-27T18:59:52.000000Z'}, {'id': 133, 'name': 'Islamic Studies', 'icon': '', 'image_url': None, 'is_audio': False, 'is_asset': False, 'language': 'en', 'sort_order': 0, 'books_count': 5, 'created_at': '2024-04-27T19:00:37",
-  "books_sample": "{'success': True, 'data': [{'id': 500, 'cat_id': 102, 'name': 'أنشودة - تأويل جزء عم', 'title': 'أنشودة - تأويل جزء عم', 'image_url': 'https://new.alamin-library.com/media/1787728933_22.jpg', 'url': 'http://alamin-library.com/audiobooks/anwar/06.mp3', 'file_name': '06.mp3', 'folder': 'juzuamma', 'album': 'أنوار العالم', 'is_audio': True, 'is_asset': False, 'sort_order': 0, 'category': {'id': 102, 'name': 'تأويل جزء عم', 'icon': None, 'image_url': 'https://new.alamin-library.com/media/1785419899_amma.jpg', 'is_audio': True, 'is_asset': True, 'language': 'ar', 'sort_order': 5, 'created_at': '2024-01-07T12:41:32.000000Z', 'updated_at': '2026-08-21T07:17:58.000000Z'}, 'created_at': None, 'updated_at': '2026-08-26T07:22:13.000000Z'}, {'id': 539, 'cat_id': 103, 'name': 'حقيقة سيدنا محمد ﷺ \"تظهر في القرن العشرين\"', 'title': 'أنشودة-عظم المقام', 'image_url': 'https://new.alamin-library.com/media/1787558835_22.jpg', 'url': 'http://alamin-library.com/audiobooks/anwar/13.mp3', 'file_name': '13.mp3', 'folder': 'anwar', 'album': 'أنوار العالم', 'is_audio': True, 'is_asset': False, 'sort_order': 0, 'category': {'id': 103, 'name': 'حقيقة سيدنا محمد ﷺ', 'icon': None, 'image_url': 'https://new.alamin-library.com/media/1785420029_hakikah.jpg', 'is_audio': True, 'is_asset': True, 'language': 'ar', 'sort_order': 11, 'created_at': '2024-01-07T12:42:06.000000Z', 'updated_at': '2026-08-21T07:17:58.000000Z'}, 'created_at': None, 'updated_at': '2026-08-24T08:07:15.000000Z'}, {'id': 540, 'cat_id': 103"
+  "total_books_and_audios": 623,
+  "total_text_books": 95,
+  "total_audio_items": 528,
+  "static_pages_found": [
+    {
+      "id": 1,
+      "lang": "ar",
+      "name": "حول التطبيق",
+      "len": 2152
+    },
+    {
+      "id": 4,
+      "lang": "ar",
+      "name": "دعوتنا إلى الله",
+      "len": 3347
+    },
+    {
+      "id": 5,
+      "lang": "ar",
+      "name": "حياة العلّامة محمّد أمين شيخو",
+      "len": 9270
+    },
+    {
+      "id": 6,
+      "lang": "ar",
+      "name": "محقّق الكتب",
+      "len": 4052
+    },
+    {
+      "id": 7,
+      "lang": "en",
+      "name": "writer",
+      "len": 6481
+    },
+    {
+      "id": 8,
+      "lang": "en",
+      "name": "auther",
+      "len": 13918
+    },
+    {
+      "id": 9,
+      "lang": "fr",
+      "name": "auther",
+      "len": 15642
+    },
+    {
+      "id": 10,
+      "lang": "fr",
+      "name": "writer",
+      "len": 2878
+    },
+    {
+      "id": 11,
+      "lang": "en",
+      "name": "About the App",
+      "len": 2595
+    },
+    {
+      "id": 12,
+      "lang": "fr",
+      "name": "about",
+      "len": 2470
+    },
+    {
+      "id": 13,
+      "lang": "fr",
+      "name": "for",
+      "len": 5803
+    },
+    {
+      "id": 14,
+      "lang": "en",
+      "name": "Our invitation to God",
+      "len": 4958
+    }
+  ],
+  "arabic_categories": [
+    {
+      "id": 2,
+      "name": "تأويل القرآن العظيم",
+      "is_audio": false,
+      "books_count": 16
+    },
+    {
+      "id": 156,
+      "name": "تأويل القرآن العظيم - المجلد الأول",
+      "is_audio": true,
+      "books_count": 42
+    },
+    {
+      "id": 3,
+      "name": "درر الأحكام",
+      "is_audio": false,
+      "books_count": 5
+    },
+    {
+      "id": 157,
+      "name": "تأويل القرآن العظيم - المجلد الثاني",
+      "is_audio": true,
+      "books_count": 39
+    },
+    {
+      "id": 4,
+      "name": "الأنبياء الكرام",
+      "is_audio": false,
+      "books_count": 4
+    },
+    {
+      "id": 158,
+      "name": "تأويل القرآن العظيم - المجلد الثالث",
+      "is_audio": true,
+      "books_count": 33
+    },
+    {
+      "id": 5,
+      "name": "دراسات إسلامية",
+      "is_audio": false,
+      "books_count": 6
+    },
+    {
+      "id": 159,
+      "name": "تأويل القرآن العظيم - المجلد الرابع",
+      "is_audio": true,
+      "books_count": 45
+    },
+    {
+      "id": 149,
+      "name": "دراسات علمية",
+      "is_audio": false,
+      "books_count": 5
+    },
+    {
+      "id": 160,
+      "name": "تأويل القرآن العظيم - المجلد الخامس",
+      "is_audio": true,
+      "books_count": 81
+    },
+    {
+      "id": 102,
+      "name": "تأويل جزء عم",
+      "is_audio": true,
+      "books_count": 39
+    },
+    {
+      "id": 146,
+      "name": "سيرة حياة العلّامة",
+      "is_audio": false,
+      "books_count": 1
+    },
+    {
+      "id": 144,
+      "name": "سؤال و جواب",
+      "is_audio": false,
+      "books_count": 1
+    },
+    {
+      "id": 161,
+      "name": "تأويل الأمين",
+      "is_audio": true,
+      "books_count": 44
+    },
+    {
+      "id": 115,
+      "name": "أسرار السبع المثاني وحقائقها",
+      "is_audio": true,
+      "books_count": 19
+    },
+    {
+      "id": 150,
+      "name": "المناهج التعليمية",
+      "is_audio": false,
+      "books_count": 5
+    },
+    {
+      "id": 141,
+      "name": "درر الأحكام",
+      "is_audio": true,
+      "books_count": 19
+    },
+    {
+      "id": 162,
+      "name": "زيارة الرسول ﷺ",
+      "is_audio": true,
+      "books_count": 13
+    },
+    {
+      "id": 114,
+      "name": "عصمة الأنبياء",
+      "is_audio": true,
+      "books_count": 26
+    },
+    {
+      "id": 103,
+      "name": "حقيقة سيدنا محمد ﷺ",
+      "is_audio": true,
+      "books_count": 14
+    },
+    {
+      "id": 104,
+      "name": "السيد المسيح عليه السلام يلوح بالأفق",
+      "is_audio": true,
+      "books_count": 29
+    },
+    {
+      "id": 112,
+      "name": "الحجامة",
+      "is_audio": true,
+      "books_count": 11
+    },
+    {
+      "id": 163,
+      "name": "الله أكبر - رفقاً بالحيوان",
+      "is_audio": true,
+      "books_count": 2
+    }
+  ],
+  "non_arabic_categories": [
+    {
+      "id": 131,
+      "lang": "en",
+      "name": "Interpretation of the Holy Qur’an",
+      "is_audio": false,
+      "books_count": 2
+    },
+    {
+      "id": 132,
+      "lang": "en",
+      "name": "Pillars of Islam",
+      "is_audio": false,
+      "books_count": 3
+    },
+    {
+      "id": 133,
+      "lang": "en",
+      "name": "Islamic Studies",
+      "is_audio": false,
+      "books_count": 5
+    },
+    {
+      "id": 136,
+      "lang": "fr",
+      "name": "Interprétation du Saint Coran",
+      "is_audio": false,
+      "books_count": 8
+    },
+    {
+      "id": 137,
+      "lang": "fr",
+      "name": "Les piliers de l'Islam",
+      "is_audio": false,
+      "books_count": 4
+    },
+    {
+      "id": 138,
+      "lang": "fr",
+      "name": "Études islamiques",
+      "is_audio": false,
+      "books_count": 6
+    },
+    {
+      "id": 139,
+      "lang": "fr",
+      "name": "Études scientifiques",
+      "is_audio": false,
+      "books_count": 4
+    },
+    {
+      "id": 140,
+      "lang": "fr",
+      "name": "Les Pages de la Gloire Immortelle",
+      "is_audio": false,
+      "books_count": 1
+    },
+    {
+      "id": 147,
+      "lang": "fr",
+      "name": "Programmes Pédagogique",
+      "is_audio": false,
+      "books_count": 4
+    },
+    {
+      "id": 148,
+      "lang": "en",
+      "name": "Scientific Studies",
+      "is_audio": false,
+      "books_count": 3
+    },
+    {
+      "id": 151,
+      "lang": "en",
+      "name": "Educational Programs",
+      "is_audio": false,
+      "books_count": 4
+    },
+    {
+      "id": 152,
+      "lang": "en",
+      "name": "Stories of the Scholar Mohammad Amin Sheikho",
+      "is_audio": false,
+      "books_count": 8
+    },
+    {
+      "id": 130,
+      "lang": "en",
+      "name": "Islam!… What are the Veil, Divorce, and Polygamy for?",
+      "is_audio": true,
+      "books_count": 26
+    },
+    {
+      "id": 142,
+      "lang": "en",
+      "name": "Pilgrimage (Hajj)",
+      "is_audio": true,
+      "books_count": 27
+    },
+    {
+      "id": 143,
+      "lang": "en",
+      "name": "The Sources of Spring Water in the World",
+      "is_audio": true,
+      "books_count": 19
+    }
+  ],
+  "tafsir_cat_2_books": [
+    {
+      "id": 767,
+      "cat_id": 2,
+      "name": "تأويل القرآن العظيم - المجلّد الأول",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_664196500585a.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 0,
+      "category": {
+        "id": 2,
+        "name": "تأويل القرآن العظيم",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "ar",
+        "sort_order": 0,
+        "created_at": "2024-01-06T20:03:43.000000Z",
+        "updated_at": "2026-07-30T14:03:50.000000Z"
+      },
+      "created_at": "2024-05-13T04:25:52.000000Z",
+      "updated_at": "2026-07-30T14:12:02.000000Z"
+    },
+    {
+      "id": 768,
+      "cat_id": 2,
+      "name": "تأويل القرآن العظيم - المجلّد الثاني",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_6641b245a24c2.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 1,
+      "category": {
+        "id": 2,
+        "name": "تأويل القرآن العظيم",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "ar",
+        "sort_order": 0,
+        "created_at": "2024-01-06T20:03:43.000000Z",
+        "updated_at": "2026-07-30T14:03:50.000000Z"
+      },
+      "created_at": "2024-05-13T06:25:09.000000Z",
+      "updated_at": "2026-07-30T14:12:02.000000Z"
+    },
+    {
+      "id": 769,
+      "cat_id": 2,
+      "name": "تأويل القرآن العظيم - المجلّد الثالث",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_664208c4cc172.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 2,
+      "category": {
+        "id": 2,
+        "name": "تأويل القرآن العظيم",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "ar",
+        "sort_order": 0,
+        "created_at": "2024-01-06T20:03:43.000000Z",
+        "updated_at": "2026-07-30T14:03:50.000000Z"
+      },
+      "created_at": "2024-05-13T12:34:12.000000Z",
+      "updated_at": "2026-07-30T14:12:02.000000Z"
+    },
+    {
+      "id": 770,
+      "cat_id": 2,
+      "name": "تأويل القرآن العظيم - المجلّد الرابع",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_6642d4f7a7d07.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 3,
+      "category": {
+        "id": 2,
+        "name": "تأويل القرآن العظيم",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "ar",
+        "sort_order": 0,
+        "created_at": "2024-01-06T20:03:43.000000Z",
+        "updated_at": "2026-07-30T14:03:50.000000Z"
+      },
+      "created_at": "2024-05-14T03:05:27.000000Z",
+      "updated_at": "2026-07-30T14:12:02.000000Z"
+    },
+    {
+      "id": 771,
+      "cat_id": 2,
+      "name": "تأويل القرآن العظيم - المجلّد الخامس",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_6643afa12f69d.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 4,
+      "category": {
+        "id": 2,
+        "name": "تأويل القرآن العظيم",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "ar",
+        "sort_order": 0,
+        "created_at": "2024-01-06T20:03:43.000000Z",
+        "updated_at": "2026-07-30T14:03:50.000000Z"
+      },
+      "created_at": "2024-05-14T18:38:25.000000Z",
+      "updated_at": "2026-07-30T14:12:02.000000Z"
+    }
+  ],
+  "sample_text_books": [
+    {
+      "id": 666,
+      "cat_id": 4,
+      "name": "زيارة الرسول ﷺ",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_6620bb042dd93.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 0,
+      "category": {
+        "id": 4,
+        "name": "الأنبياء الكرام",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "ar",
+        "sort_order": 2,
+        "created_at": "2024-01-06T20:04:07.000000Z",
+        "updated_at": "2026-07-30T14:03:50.000000Z"
+      },
+      "created_at": "2024-04-18T06:16:18.000000Z",
+      "updated_at": "2024-04-18T06:17:40.000000Z"
+    },
+    {
+      "id": 667,
+      "cat_id": 132,
+      "name": "Zakat \"Alms giving\"",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_662d4d838b05b.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 0,
+      "category": {
+        "id": 132,
+        "name": "Pillars of Islam",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "en",
+        "sort_order": 0,
+        "created_at": "2024-04-27T18:59:52.000000Z",
+        "updated_at": "2024-04-27T18:59:52.000000Z"
+      },
+      "created_at": "2024-04-27T19:09:55.000000Z",
+      "updated_at": "2024-04-27T19:09:55.000000Z"
+    },
+    {
+      "id": 668,
+      "cat_id": 131,
+      "name": "Interpretation of the Thirtieth Part of the Holy Qur'an",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_662f373028307.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 0,
+      "category": {
+        "id": 131,
+        "name": "Interpretation of the Holy Qur’an",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "en",
+        "sort_order": 0,
+        "created_at": "2024-04-27T18:59:20.000000Z",
+        "updated_at": "2024-04-27T18:59:20.000000Z"
+      },
+      "created_at": "2024-04-29T04:42:25.000000Z",
+      "updated_at": "2024-04-29T05:59:12.000000Z"
+    },
+    {
+      "id": 669,
+      "cat_id": 136,
+      "name": "Interprétation de la Partie Amma (Partie 30)",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_662f3646da5ac.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 0,
+      "category": {
+        "id": 136,
+        "name": "Interprétation du Saint Coran",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "fr",
+        "sort_order": 0,
+        "created_at": "2024-04-27T19:02:40.000000Z",
+        "updated_at": "2024-04-27T19:02:40.000000Z"
+      },
+      "created_at": "2024-04-29T04:47:21.000000Z",
+      "updated_at": "2024-04-29T05:55:18.000000Z"
+    },
+    {
+      "id": 670,
+      "cat_id": 137,
+      "name": "La Foi",
+      "title": "0",
+      "image_url": "https://new.alamin-library.com/frontend/book-images/media_662f2716eec4a.jpg",
+      "url": "0",
+      "file_name": "0",
+      "folder": "0",
+      "album": "0",
+      "is_audio": false,
+      "is_asset": false,
+      "sort_order": 0,
+      "category": {
+        "id": 137,
+        "name": "Les piliers de l'Islam",
+        "icon": "",
+        "image_url": null,
+        "is_audio": false,
+        "is_asset": false,
+        "language": "fr",
+        "sort_order": 0,
+        "created_at": "2024-04-27T19:03:01.000000Z",
+        "updated_at": "2024-04-27T19:03:01.000000Z"
+      },
+      "created_at": "2024-04-29T04:50:30.000000Z",
+      "updated_at": "2024-04-29T05:17:56.000000Z"
+    }
+  ],
+  "db_url_checks": {
+    "http://alamin-library.com/alamin748965.db": {
+      "status": 404,
+      "size": null
+    },
+    "http://alamin-library.com/db/alamin748965.db": {
+      "status": 404,
+      "size": null
+    },
+    "https://new.alamin-library.com/media/alamin748965.db": {
+      "status": 404,
+      "size": null
+    },
+    "https://new.alamin-library.com/storage/alamin748965.db": {
+      "status": 404,
+      "size": null
+    }
+  }
 }

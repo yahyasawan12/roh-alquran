@@ -1,0 +1,80 @@
+[
+  {
+    "id": 136,
+    "name": "Interprétation du Saint Coran",
+    "icon": "",
+    "image_url": null,
+    "is_audio": false,
+    "is_asset": false,
+    "language": "fr",
+    "sort_order": 0,
+    "books_count": 8,
+    "created_at": "2024-04-27T19:02:40.000000Z",
+    "updated_at": "2024-04-27T19:02:40.000000Z"
+  },
+  {
+    "id": 137,
+    "name": "Les piliers de l'Islam",
+    "icon": "",
+    "image_url": null,
+    "is_audio": false,
+    "is_asset": false,
+    "language": "fr",
+    "sort_order": 0,
+    "books_count": 4,
+    "created_at": "2024-04-27T19:03:01.000000Z",
+    "updated_at": "2024-04-27T19:03:01.000000Z"
+  },
+  {
+    "id": 138,
+    "name": "Études islamiques",
+    "icon": "",
+    "image_url": null,
+    "is_audio": false,
+    "is_asset": false,
+    "language": "fr",
+    "sort_order": 0,
+    "books_count": 6,
+    "created_at": "2024-04-27T19:03:19.000000Z",
+    "updated_at": "2024-04-27T19:03:19.000000Z"
+  },
+  {
+    "id": 139,
+    "name": "Études scientifiques",
+    "icon": "",
+    "image_url": null,
+    "is_audio": false,
+    "is_asset": false,
+    "language": "fr",
+    "sort_order": 0,
+    "books_count": 4,
+    "created_at": "2024-04-27T19:03:34.000000Z",
+    "updated_at": "2024-04-27T19:03:34.000000Z"
+  },
+  {
+    "id": 140,
+    "name": "Les Pages de la Gloire Immortelle",
+    "icon": "",
+    "image_url": null,
+    "is_audio": false,
+    "is_asset": false,
+    "language": "fr",
+    "sort_order": 0,
+    "books_count": 1,
+    "created_at": "2024-04-27T19:03:46.000000Z",
+    "updated_at": "2024-04-27T19:03:46.000000Z"
+  },
+  {
+    "id": 147,
+    "name": "Programmes Pédagogique",
+    "icon": "",
+    "image_url": null,
+    "is_audio": false,
+    "is_asset": false,
+    "language": "fr",
+    "sort_order": 0,
+    "books_count": 4,
+    "created_at": "2025-04-14T08:43:31.000000Z",
+    "updated_at": "2025-04-14T08:43:31.000000Z"
+  }
+]
