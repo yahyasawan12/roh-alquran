@@ -1,4 +1,4 @@
-name: Bypass Expired SSL & Fetch Alamin API
+name: Parse & Organize Fetched Alamin Data
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  fetch-api-nossl:
+  parse-data:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -16,89 +16,95 @@ jobs:
       - name: Install requests
         run: pip install requests urllib3
 
-      - name: Pull Books, Categories & Tafsir (verify=False)
+      - name: Analyze Books, Tafsir Category & Static Info
         run: |
           python3 - << 'EOF'
           import os, json, requests, urllib3
+          from collections import Counter
           urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-          os.makedirs("data", exist_ok=True)
-          base = "https://new.alamin-library.com"
-          headers = {
-              "User-Agent": "Dart/3.3 (dart:io)",
-              "Accept": "application/json"
-          }
+          with open("data/api_v1_categories.json", "r", encoding="utf-8") as f:
+              cats = json.load(f).get("data", [])
 
-          endpoints = [
-              "/api/v1/categories",
-              "/api/v1/books",
-              "/api/v1/books?per_page=500",
-              "/api/v1/static-info",
-              "/api/v1/notifications",
-              "/api/v1/audiobooks",
-              "/api/v1/audio-books",
-              "/api/v1/audios",
-              "/api/v1/tafsir",
-              "/api/v1/tafsirs",
-              "/api/v1/quran",
-              "/public/alamin748965.db"
+          with open("data/api_v1_books.json", "r", encoding="utf-8") as f:
+              books = json.load(f).get("data", [])
+
+          with open("data/api_v1_static-info.json", "r", encoding="utf-8") as f:
+              statics = json.load(f).get("data", [])
+
+          # 1. تحليل الصفحات الثابتة (حول التطبيق، حياة العلامة، دعوتنا، محقق الكتب...)
+          static_summary = [
+              {"id": s.get("id"), "lang": s.get("language"), "name": s.get("name"), "len": len(s.get("content", ""))}
+              for s in statics
           ]
 
-          report = {}
-          for ep in endpoints:
-              url = base + ep
-              try:
-                  r = requests.get(url, headers=headers, timeout=30, verify=False)
-                  ct = r.headers.get("Content-Type", "")
-                  info = {"status": r.status_code, "size": len(r.content), "content_type": ct}
-                  if r.status_code == 200:
-                      if "json" in ct or r.text.strip().startswith(("{", "[")):
-                          data = r.json()
-                          safe_name = ep.strip("/").replace("/", "_").replace("?", "_").replace("=", "_") + ".json"
-                          with open(f"data/{safe_name}", "w", encoding="utf-8") as f:
-                              json.dump(data, f, ensure_ascii=False, indent=2)
-                          info["saved_to"] = f"data/{safe_name}"
-                          info["preview"] = r.text[:1000]
-                      elif len(r.content) > 1000 and ep.endswith(".db"):
-                          with open("data/alamin748965.db", "wb") as f:
-                              f.write(r.content)
-                          info["saved_to"] = "data/alamin748965.db"
-                      else:
-                          info["preview"] = r.text[:400]
-                  else:
-                      info["response_snippet"] = r.text[:300]
-                  report[ep] = info
-              except Exception as e:
-                  report[ep] = {"error": str(e)}
+          # 2. تحليل الأقسام واللغات المتوفرة
+          cat_langs = Counter(c.get("language") for c in cats)
+          ar_cats = [
+              {"id": c.get("id"), "name": c.get("name"), "is_audio": c.get("is_audio"), "books_count": c.get("books_count")}
+              for c in cats if c.get("language") == "ar"
+          ]
+          other_cats = [
+              {"id": c.get("id"), "lang": c.get("language"), "name": c.get("name"), "is_audio": c.get("is_audio"), "books_count": c.get("books_count")}
+              for c in cats if c.get("language") != "ar"
+          ]
 
-          # فحص تفاصيل أول تصنيف وأول كتاب لمعرفة المسارات الفرعية الكاملة
-          if os.path.exists("data/api_v1_categories.json"):
-              try:
-                  with open("data/api_v1_categories.json", "r", encoding="utf-8") as f:
-                      cdata = json.load(f)
-                  report["categories_sample"] = str(cdata)[:1000]
-              except Exception as e:
-                  report["categories_err"] = str(e)
+          # 3. فحص كتب قسم "تأويل القرآن العظيم" (cat_id == 2) وأمثلة من الكتب النصية غير الصوتية
+          tafsir_books = [b for b in books if b.get("cat_id") == 2]
+          text_books = [b for b in books if not b.get("is_audio")]
+          audio_books = [b for b in books if b.get("is_audio")]
 
-          if os.path.exists("data/api_v1_books.json"):
+          # 4. فحص مكان ملف alamin748965.db على السيرفرين
+          db_check = {}
+          for test_url in [
+              "http://alamin-library.com/alamin748965.db",
+              "http://alamin-library.com/db/alamin748965.db",
+              "https://new.alamin-library.com/media/alamin748965.db",
+              "https://new.alamin-library.com/storage/alamin748965.db"
+          ]:
               try:
-                  with open("data/api_v1_books.json", "r", encoding="utf-8") as f:
-                      bdata = json.load(f)
-                  report["books_sample"] = str(bdata)[:1500]
+                  r = requests.head(test_url, timeout=10, verify=False, allow_redirects=True)
+                  db_check[test_url] = {"status": r.status_code, "size": r.headers.get("Content-Length")}
               except Exception as e:
-                  report["books_err"] = str(e)
+                  db_check[test_url] = {"err": str(e)}
+
+          # 5. فرز وحفظ البيانات في مجلدات لغات معزولة لمنع أي تضارب
+          for lang in ["ar", "en", "fr"]:
+              os.makedirs(f"data/{lang}", exist_ok=True)
+              lang_cats = [c for c in cats if c.get("language") == lang]
+              lang_cat_ids = {c.get("id") for c in lang_cats}
+              lang_books = [b for b in books if (b.get("category") or {}).get("language") == lang or b.get("cat_id") in lang_cat_ids]
+              lang_statics = [s for s in statics if s.get("language") == lang]
+
+              with open(f"data/{lang}/categories.json", "w", encoding="utf-8") as f:
+                  json.dump(lang_cats, f, ensure_ascii=False, indent=2)
+              with open(f"data/{lang}/books.json", "w", encoding="utf-8") as f:
+                  json.dump(lang_books, f, ensure_ascii=False, indent=2)
+              with open(f"data/{lang}/static_info.json", "w", encoding="utf-8") as f:
+                  json.dump(lang_statics, f, ensure_ascii=False, indent=2)
+
+          summary = {
+              "total_categories": len(cats),
+              "categories_by_language": dict(cat_langs),
+              "total_books_and_audios": len(books),
+              "total_text_books": len(text_books),
+              "total_audio_items": len(audio_books),
+              "static_pages_found": static_summary,
+              "arabic_categories": ar_cats,
+              "non_arabic_categories": other_cats,
+              "tafsir_cat_2_books": tafsir_books[:5],
+              "sample_text_books": text_books[:5],
+              "db_url_checks": db_check
+          }
 
           with open("data/new_api_report.json", "w", encoding="utf-8") as f:
-              json.dump(report, f, ensure_ascii=False, indent=2)
-
-          print("=== SUCCESSFUL API REPORT ===")
-          print(json.dumps(report, ensure_ascii=False, indent=2))
+              json.dump(summary, f, ensure_ascii=False, indent=2)
           EOF
 
-      - name: Commit Fetched Data to Repository
+      - name: Commit Organized Data
         run: |
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
           git add data/
-          git diff --staged --quiet || git commit -m "Save fetched API data bypassing expired SSL"
+          git diff --staged --quiet || git commit -m "Organize multi-language data and generate summary"
           git push
