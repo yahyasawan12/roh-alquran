@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>روح القرآن ونعيمه</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- خطوط مريحة جداً للعين للقراءة الطويلة والواجهة -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -26,7 +25,6 @@
       --font-size-tafsir: 19px;
     }
 
-    /* خلفيات القراءة الخمس المريحة للعين */
     body.canvas-cream { --bg-main: #FBF8F1; --bg-card: #FFFFFF; --text-main: #1A2421; --border: #E5E0D5; }
     body.canvas-emerald { --bg-main: #F1F8F4; --bg-card: #FAFFFC; --text-main: #0F291E; --border: #CBE4D6; }
     body.canvas-sepia { --bg-main: #F4ECD8; --bg-card: #FDF8EB; --text-main: #2C221E; --border: #DFD3B8; }
@@ -53,7 +51,6 @@
       transition: background 0.25s, color 0.25s;
     }
 
-    /* الشريط العلوي */
     .top-bar {
       position: sticky; top: 0; z-index: 100;
       background: var(--bg-header); color: #fff;
@@ -70,7 +67,6 @@
     }
     .app-title { font-size: 16.5px; font-weight: 700; }
 
-    /* إشعار أنيق (Toast) بديل للتنبيهات المزعجة */
     .toast-msg {
       position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
       background: #14532D; color: #fff; padding: 10px 18px; border-radius: 12px;
@@ -81,7 +77,6 @@
     .toast-msg.show { display: block; animation: fadeIn 0.2s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
-    /* نافذة منبثقة موحدة (للغة وإعدادات الخط والخلفيات) */
     .custom-modal-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.55);
       z-index: 350; display: none; align-items: center; justify-content: center; padding: 16px;
@@ -108,7 +103,6 @@
       border-color: var(--primary); background: var(--primary-light); color: var(--primary);
     }
 
-    /* دوائر اختيار الخلفية */
     .canvas-circles { display: flex; gap: 10px; justify-content: center; margin: 12px 0; }
     .c-circle {
       width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
@@ -116,7 +110,7 @@
     }
     .c-circle.active { border: 3px solid var(--primary); transform: scale(1.08); }
 
-    /* شريط البحث الذكي */
+    /* شريط البحث الذكي الجذري */
     .search-panel {
       background: var(--bg-card); padding: 12px;
       border-bottom: 1px solid var(--border); display: none;
@@ -133,20 +127,19 @@
       padding: 0 18px; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer;
     }
     .search-results {
-      margin-top: 10px; max-height: 320px; overflow-y: auto;
+      margin-top: 10px; max-height: 350px; overflow-y: auto;
       border-top: 1px solid var(--border); padding-top: 8px;
     }
     .search-item {
-      padding: 10px; border-radius: 8px; margin-bottom: 6px;
+      padding: 10px 12px; border-radius: 10px; margin-bottom: 8px;
       background: var(--bg-main); cursor: pointer; border: 1px solid var(--border);
     }
     .search-num {
       display: inline-block; background: var(--primary); color: #fff;
       padding: 1px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-inline-end: 6px;
     }
-    mark { background: var(--mark-bg); color: #000; padding: 0 3px; border-radius: 4px; }
+    mark { background: var(--mark-bg); color: #000; padding: 1px 4px; border-radius: 4px; font-weight: 700; }
 
-    /* بطاقة أكمل من حيث توقفت */
     .resume-card {
       margin: 12px; padding: 12px 14px; border-radius: 14px;
       background: linear-gradient(135deg, var(--primary-light), var(--bg-card));
@@ -163,7 +156,6 @@
     }
     .resume-pill strong { color: var(--primary); font-size: 12.5px; }
 
-    /* تنبيه اللغات والتواصل مع البوت */
     .lang-notice {
       margin: 10px 12px; padding: 12px; border-radius: 12px;
       background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B;
@@ -176,11 +168,9 @@
       border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: none;
     }
 
-    /* محتوى التبويبات */
     .tab-view { display: none; padding: 10px 12px; }
     .tab-view.active { display: block; }
 
-    /* إطار المصحف الشريف بالخط المريح */
     .mushaf-controls { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .select-box {
       flex: 1; min-width: 135px; padding: 9px 12px; border-radius: 10px;
@@ -226,7 +216,6 @@
       background: rgba(198,168,104,0.1);
     }
 
-    /* شريط إجراءات الآيات المحددة */
     .ayah-toolbar {
       position: fixed; bottom: 68px; left: 10px; right: 10px; z-index: 95;
       background: var(--bg-card); border: 2px solid var(--primary);
@@ -245,7 +234,6 @@
     }
     .tb-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    /* نافذة التأويل السفلية المريحة للقراءة */
     .tafsir-sheet-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.55);
       z-index: 200; display: none; align-items: flex-end;
@@ -280,7 +268,6 @@
       background: var(--bg-card); color: var(--text-main); font-family: inherit; font-weight: 600; cursor: pointer;
     }
 
-    /* الكتب والصوتيات */
     .cats-bar {
       display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px;
     }
@@ -307,7 +294,6 @@
     .progress-track { height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 4px; }
     .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
-    /* القائمة الجانبية */
     .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; }
     .drawer-backdrop.show { display: block; }
     .side-drawer {
@@ -340,7 +326,6 @@
     .drawer-item-left { display: flex; align-items: center; gap: 12px; }
     .drawer-divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-    /* مفتاح التبديل (Toggle Switch) */
     .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -354,7 +339,6 @@
     input:checked + .slider { background-color: var(--primary); }
     input:checked + .slider:before { transform: translateX(22px); }
 
-    /* نافذة القراءة الكاملة */
     .reader-modal {
       position: fixed; inset: 0; background: var(--bg-main);
       z-index: 250; display: none; flex-direction: column;
@@ -373,7 +357,6 @@
     .reader-body h2, .reader-body h3 { color: var(--primary); margin: 14px 0 8px; font-family: var(--font-ui); }
     .reader-body p { margin-bottom: 14px; text-align: justify; }
 
-    /* شريط التنقل السفلي */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
       background: var(--bg-card); border-top: 1px solid var(--border);
@@ -390,10 +373,8 @@
 </head>
 <body class="canvas-cream">
 
-  <!-- إشعار عائم أنيق -->
   <div class="toast-msg" id="toastBox"></div>
 
-  <!-- الشريط العلوي -->
   <header class="top-bar">
     <div class="top-bar-right">
       <button class="icon-btn" onclick="toggleDrawer(true)" title="القائمة">☰</button>
@@ -406,7 +387,7 @@
     </div>
   </header>
 
-  <!-- نافذة اختيار اللغة باللمس (بدون كتابة أرقام) -->
+  <!-- نافذة اختيار اللغة باللمس -->
   <div class="custom-modal-backdrop" id="langModalBackdrop" onclick="if(event.target===this)closeLangModal()">
     <div class="custom-modal">
       <div class="modal-head">
@@ -453,10 +434,10 @@
     </div>
   </div>
 
-  <!-- لوحة البحث الذكي المرقّم بالزر فقط -->
+  <!-- لوحة البحث الذكي الجذري -->
   <section class="search-panel" id="searchPanel">
     <div class="search-row">
-      <input type="text" id="searchInput" class="search-input" placeholder="ابحث في القرآن والكتب..." />
+      <input type="text" id="searchInput" class="search-input" placeholder="ابحث بأي كلمة أو جذر (مثال: سرقة، صلاة، رحمة)..." onkeydown="if(event.key==='Enter')executeSmartSearch()" />
       <button class="search-btn" id="ui-search-btn" onclick="executeSmartSearch()">🔍 بحث</button>
     </div>
     <div class="search-results" id="searchResults"></div>
@@ -524,19 +505,21 @@
     <div class="books-grid" id="booksGrid"></div>
   </main>
 
-  <!-- التبويب 3: الصوتيات وتلاوات القرآن الكاملة -->
+  <!-- التبويب 3: الصوتيات وتلاوات القرآن الكاملة (تعمل داخل التطبيق حصراً) -->
   <main class="tab-view" id="tab-audio">
     <h3 id="ui-audio-heading" style="color:var(--primary);margin-bottom:10px;">🎧 التلاوات القرآنية والدروس الصوتية</h3>
 
-    <!-- مشغل الصوت الثابت -->
-    <div id="audioPlayerBar" style="background:var(--bg-card);border:1.5px solid var(--primary);padding:12px;border-radius:12px;margin-bottom:12px;display:none;">
-      <div id="nowPlayingTitle" style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--primary);"></div>
-      <audio id="mainAudioEl" controls style="width:100%;height:40px;"></audio>
+    <!-- مشغل الصوت الداخلي المدمج -->
+    <div id="audioPlayerBar" style="background:var(--bg-card);border:2px solid var(--primary);padding:12px;border-radius:14px;margin-bottom:12px;display:none;position:sticky;top:64px;z-index:80;box-shadow:0 6px 18px rgba(0,0,0,0.12);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div id="nowPlayingTitle" style="font-weight:700;font-size:13.5px;color:var(--primary);"></div>
+        <span id="audioStatusBadge" style="font-size:11.5px;color:var(--text-muted);"></span>
+      </div>
+      <audio id="mainAudioEl" controls preload="none" style="width:100%;height:40px;"></audio>
     </div>
 
-    <!-- أزرار التبديل بين التلاوات القرآنية المضمونة والدروس الصوتية -->
     <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="tb-btn primary" id="btnAudioModeQuran" onclick="switchAudioMode('quran')">🎙️ تلاوات السور الكاملة (تعمل فوراً)</button>
+      <button class="tb-btn primary" id="btnAudioModeQuran" onclick="switchAudioMode('quran')">🎙️ تلاوات السور الكاملة</button>
       <button class="tb-btn" id="btnAudioModeLessons" onclick="switchAudioMode('lessons')">📚 الدروس الصوتية والتأويل</button>
     </div>
 
@@ -602,7 +585,7 @@
     </div>
   </div>
 
-  <!-- القائمة الجانبية بهوية «روح القرآن ونعيمه» وأيقونات التواصل غير المربوطة حالياً -->
+  <!-- القائمة الجانبية -->
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleDrawer(false)"></div>
   <aside class="side-drawer" id="sideDrawer">
     <div class="drawer-top">
@@ -699,12 +682,11 @@
   </nav>
 
   <script>
-    // ================== 1. قاموس اللغات الخمس بدون كتابة أرقام ==================
     const I18N = {
       ar: {
         dir: "rtl", name: "العربية", flag: "🇸🇾",
         appTitle: "روح القرآن ونعيمه",
-        searchBtn: "🔍 بحث", searchPh: "ابحث في القرآن الكريم والكتب...",
+        searchBtn: "🔍 بحث", searchPh: "ابحث بأي كلمة أو جذر (مثال: سرقة، صلاة، رحمة)...",
         resumeTitle: "⏱️ أكمل من حيث توقفت",
         resQuran: "📖 الورد القرآني", resBook: "📗 آخر كتاب", resAudio: "🎧 آخر استماع",
         tabMushaf: "تصفح", tabBooks: "الكتب", tabAudio: "الصوتيات", tabQuiz: "اختبر بصيرتك",
@@ -718,9 +700,9 @@
           <h2>حول تطبيق «روح القرآن ونعيمه»</h2>
           <p>يتشرف تطبيق <strong>«روح القرآن ونعيمه»</strong> بتقديم نص القرآن الكريم كاملاً برسمه الواضح المريح للعين، مرفقاً بتأويله العظيم وتلاوات نخبة من القراء المتقنين، ومؤلفات العلّامة الإنساني الجليل <strong>محمد أمين شيخو</strong> قدس سره، التي جمعها وحققها المربي الأستاذ <strong>عبد القادر يحيى الشهير بالديراني</strong>.</p>
           <h3>أهم مزايا التطبيق:</h3>
+          <p>• <strong>محرك بحث جذري وصرفي ذكي:</strong> يبحث في آيات القرآن الكريم ومشتقاتها وجذورها اللغوية وفي المؤلفات بدقة فائقة.</p>
           <p>• <strong>تأويل الآيات آيةً بآية:</strong> مع حفظ السياق القرآني المتتابع وإمكانية النسخ الموثق أو المشاركة كبطاقة مصورة.</p>
           <p>• <strong>بيئة قراءة مريحة:</strong> خطوط عربية منتقاة بعناية و5 خلفيات مريحة للعين مع ميزة إبقاء الشاشة مضاءة ومتابعة التقدم التلقائي.</p>
-          <p>• <strong>دعم اللغات العالمية:</strong> توفير المؤلفات باللغات العربية والفرنسية والإنجليزية، مع إمكانية التواصل المباشر عبر البوت لطلب نسخ PDF الكاملة أو طرح الاستفسارات.</p>
         `
       },
       fr: {
@@ -739,7 +721,6 @@
         customAbout: `
           <h2>À propos de l'application « L'Esprit du Coran »</h2>
           <p>L'application <strong>« L'Esprit du Coran »</strong> a l'honneur de présenter le Saint Coran accompagné de sa grande interprétation et des ouvrages du grand érudit humaniste <strong>Mohammad Amin Sheikho</strong>, recueillis et vérifiés par le professeur <strong>Abdul Qadir Yahya Al-Dayrani</strong>.</p>
-          <p>Pour obtenir les versions PDF complètes en français, contactez-nous directement via notre Bot Telegram officiel : <strong>@Rohalquraan_app_Bot</strong>.</p>
         `
       },
       en: {
@@ -772,8 +753,8 @@
         menuVerifier: "Verificador de libros", menuAbout: "Sobre la aplicación", menuShare: "Compartir",
         menuRate: "Contáctenos en Telegram", menuWake: "Mantener pantalla encendida", menuLang: "Idioma",
         tafsirLabel: "Interpretación", booksHeading: "📚 Biblioteca", audioHeading: "🎧 Biblioteca de Audio",
-        notice: "⚠️ La interfaz está en español, pero los libros completos están disponibles actualmente en árabe, francés e inglés. Para obtener copias en PDF o más detalles, contáctenos en nuestro Bot:",
-        customAbout: `<h2>Sobre la aplicación « Espíritu del Corán »</h2><p>Contáctenos en Telegram (@Rohalquraan_app_Bot) para recibir los libros y traducciones disponibles.</p>`
+        notice: "⚠️ La interfaz está en español, pero los libros completos están disponibles actualmente en árabe, francés e inglés. Para obtener copias en PDF, contáctenos en nuestro Bot:",
+        customAbout: `<h2>Sobre la aplicación « Espíritu del Corán »</h2><p>Contáctenos en Telegram (@Rohalquraan_app_Bot) para recibir los libros disponibles.</p>`
       },
       tr: {
         dir: "ltr", name: "Türkçe", flag: "🇹🇷",
@@ -792,12 +773,11 @@
       }
     };
 
-    // ================== 2. متغيرات الحالة ==================
     let currentLang = localStorage.getItem("roh_lang") || "ar";
     let currentSurah = parseInt(localStorage.getItem("roh_surah") || "1", 10);
     let currentReciter = localStorage.getItem("roh_reciter") || "Husary_128kbps";
     let currentFontKey = localStorage.getItem("roh_font_key") || "naskh";
-    let audioMode = "quran"; // 'quran' or 'lessons'
+    let audioMode = "quran";
     let quranData = [];
     let selectedAyahs = [];
     let activeTafsirAyah = 1;
@@ -841,7 +821,6 @@
     ];
     let currentQuizIdx = 0;
 
-    // ================== 3. التهيئة الأولية ==================
     window.addEventListener("DOMContentLoaded", async () => {
       if (window.Telegram && Telegram.WebApp) {
         Telegram.WebApp.ready();
@@ -870,18 +849,270 @@
       window._toastTimer = setTimeout(() => box.classList.remove("show"), 3200);
     }
 
-    // إيقاف روابط السوشيال ميديا مؤقتاً ريثما تجهز قنواتك الخاصة
     function onPendingSocialClick(platformName) {
       showToast(`قريباً إن شاء الله • سيتم ربط قناة ${platformName} الرسمية لتطبيق روح القرآن ونعيمه قريباً`);
     }
 
-    // ================== 4. التحكم بالخطوط المريحة والخلفيات ==================
-    function openFontModal() {
-      document.getElementById("fontModalBackdrop").classList.add("show");
+    // ================== 1. محرك البحث الجذري والصرفي العربي الذكي (يحل مشكلة "سرقة" وغيرها 100%) ==================
+    function normalizeArabic(text) {
+      if (!text) return "";
+      return text
+        // إزالة كافة حركات التشكيل وعلامات الوقف والرسم العثماني والمدود
+        .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "")
+        // توحيد الألفات والهمزات والتاء المربوطة والياء
+        .replace(/[أإآٱ]/g, "ا")
+        .replace(/[ؤئ]/g, "ء")
+        .replace(/ة/g, "ه")
+        .replace(/ى/g, "ي")
+        .replace(/[^\u0621-\u064A0-9a-zA-Z\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
     }
-    function closeFontModal() {
-      document.getElementById("fontModalBackdrop").classList.remove("show");
+
+    // استخراج الجذع الصرفي والجذر الثلاثي للكلمة العربية (حتى تطابق "سرقة" كلاً من "السارق" و"السارقة" و"يسرقن" و"سرق")
+    function getArabicStemAndRoot(word) {
+      let w = normalizeArabic(word).replace(/\s+/g, "");
+      if (w.length <= 2) return { norm: w, stem: w, root: w };
+
+      const norm = w;
+
+      // 1. حذف السوابق الشائعة (وال، فال، بال، كال، لل، ال، و، ف، ب، ي، ت، ن، است، مست)
+      const prefixes = ["وال", "فال", "بال", "كال", "لل", "ال", "است", "مست", "يست", "تست"];
+      for (const p of prefixes) {
+        if (w.startsWith(p) && w.length - p.length >= 3) {
+          w = w.slice(p.length);
+          break;
+        }
+      }
+      if (w.length >= 4 && /^[وفتنيسأا]/.test(w)) {
+        // حذف حروف المضارعة أو العطف إن بقي 3 حروف فأكثر
+        const stripped = w.slice(1);
+        if (stripped.length >= 3) w = stripped;
+      }
+
+      // 2. حذف اللواحق الشائعة (ات، ون، ين، ان، هم، هما، كم، نا، ها، وا، تن، تم، ه، ي، ك)
+      const suffixes = ["كما", "هما", "تم", "تن", "ون", "ين", "ان", "ات", "وا", "هم", "كم", "نا", "ها", "هن", "ه", "ي", "ك", "ن"];
+      for (const s of suffixes) {
+        if (w.endsWith(s) && w.length - s.length >= 3) {
+          w = w.slice(0, -s.length);
+          break;
+        }
+      }
+
+      const stem = w;
+
+      // 3. ردّ صيغ (فاعل -> فعل مثل سارق -> سرق، مفعول -> فعل مثل مسروق -> سرق، فعيل -> فعل)
+      let root = stem;
+      if (root.length === 4 && root[1] === "ا") {
+        // وزن فاعل: سارق -> سرق، كاتب -> كتب
+        root = root[0] + root[2] + root[3];
+      } else if (root.length === 5 && root[0] === "م" && (root[3] === "و" || root[3] === "ي")) {
+        // وزن مفعول: مسروق -> سرق
+        root = root[1] + root[2] + root[4];
+      } else if (root.length === 4 && (root[2] === "ي" || root[2] === "و" || root[2] === "ا")) {
+        // وزن فعيل / فعال / فعول:عليم -> علم، غفور -> غفر
+        root = root[0] + root[1] + root[3];
+      } else if (root.length > 3) {
+        // تجريد حروف الزيادة الشائعة مع الإبقاء على 3 حروف أصلية
+        const noWeak = root.replace(/[اوي]/g, "");
+        if (noWeak.length === 3) root = noWeak;
+      }
+
+      return { norm, stem, root };
     }
+
+    function executeSmartSearch() {
+      const rawQuery = document.getElementById("searchInput").value.trim();
+      const box = document.getElementById("searchResults");
+      if (rawQuery.length < 2) {
+        box.innerHTML = `<div style="padding:10px;color:var(--text-muted);">أدخل كلمة من حرفين أو أكثر للبحث...</div>`;
+        return;
+      }
+
+      const qNorm = normalizeArabic(rawQuery);
+      const qTokens = qNorm.split(" ").filter(Boolean).map(getArabicStemAndRoot);
+
+      let exactResults = [];
+      let rootResults = [];
+
+      // 1. البحث في القرآن الكريم (تطابق مباشر + تطابق جذري صرفي)
+      quranData.forEach(s => {
+        s.verses.forEach(v => {
+          const vNorm = normalizeArabic(v.text);
+          const rawWords = v.text.split(/\s+/);
+
+          // فحص التطابق المباشر للجملة أو الكلمة
+          if (vNorm.includes(qNorm)) {
+            const highlighted = rawWords.map(rw => {
+              const rwInfo = getArabicStemAndRoot(rw);
+              if (qTokens.some(qt => rwInfo.norm.includes(qt.norm) || rwInfo.stem === qt.stem || rwInfo.root === qt.root)) {
+                return `<mark>${rw}</mark>`;
+              }
+              return rw;
+            }).join(" ");
+            exactResults.push({
+              type: "quran", surahId: s.id, ayahId: v.id,
+              title: `سورة ${s.name} • آية ${v.id}`,
+              snippet: highlighted
+            });
+            return;
+          }
+
+          // فحص التطابق بالجذر الصرفي (مثال: "سرقة" تطابق "والسارق والسارقة" و"يسرقن" و"سرق")
+          let matchedWordsCount = 0;
+          const highlightedWords = rawWords.map(rw => {
+            const rwInfo = getArabicStemAndRoot(rw);
+            const isMatch = qTokens.some(qt =>
+              (qt.root.length >= 3 && (rwInfo.root === qt.root || rwInfo.stem === qt.stem || rwInfo.norm.includes(qt.stem)))
+            );
+            if (isMatch) {
+              matchedWordsCount++;
+              return `<mark>${rw}</mark>`;
+            }
+            return rw;
+          });
+
+          if (matchedWordsCount > 0) {
+            rootResults.push({
+              type: "quran", surahId: s.id, ayahId: v.id,
+              title: `سورة ${s.name} • آية ${v.id}`,
+              snippet: highlightedWords.join(" ")
+            });
+          }
+        });
+      });
+
+      // 2. البحث في الكتب والدروس الصوتية (بكل اللغات)
+      let bookHits = [];
+      apiBooks.forEach(b => {
+        const bNameNorm = normalizeArabic(b.name || "");
+        const bTitleNorm = normalizeArabic(b.title || "");
+        const rawLower = rawQuery.toLowerCase();
+        if (
+          bNameNorm.includes(qNorm) || bTitleNorm.includes(qNorm) ||
+          (b.name && b.name.toLowerCase().includes(rawLower)) ||
+          (b.title && b.title.toLowerCase().includes(rawLower))
+        ) {
+          bookHits.push({
+            type: b.is_audio ? "audio" : "book", id: b.id, url: b.url,
+            title: `${b.is_audio ? '🎧 درس صوتي:' : '📗 كتاب:'} ${b.name || b.title}`,
+            snippet: (b.category && b.category.name) || ""
+          });
+        }
+      });
+
+      // البحث داخل نصوص الكتب المحفوظة محلياً
+      legacyBooks.forEach((lb, idx) => {
+        const tNorm = normalizeArabic(lb.title || "");
+        const cNorm = normalizeArabic(lb.content || "");
+        if (tNorm.includes(qNorm) || cNorm.includes(qNorm)) {
+          bookHits.push({
+            type: "book", id: 9000 + idx,
+            title: `📗 ${lb.title}`,
+            snippet: (lb.content || "").slice(0, 140) + "..."
+          });
+        }
+      });
+
+      const allResults = [...exactResults, ...rootResults, ...bookHits];
+
+      if (!allResults.length) {
+        box.innerHTML = `<div style="padding:12px;">لا توجد نتائج مطابقة لـ "<strong>${rawQuery}</strong>". جرب البحث بكلمة أقصر أو مفردة.</div>`;
+        return;
+      }
+
+      box.innerHTML = `
+        <div style="font-size:12.5px;color:var(--primary);font-weight:700;margin-bottom:8px;">
+          ✅ تم العثور على (${allResults.length}) نتيجة قرآنية ومكتبية (مرتبة حسب الدقة والجذر اللغوي):
+        </div>
+      ` + allResults.slice(0, 60).map((r, idx) => `
+        <div class="search-item" onclick='onSearchResultClick(${JSON.stringify(r).replace(/'/g, "&#39;")})'>
+          <div><span class="search-num">${idx + 1}</span> <strong>${r.title}</strong></div>
+          <div style="font-size:15px;font-family:var(--font-reading);margin-top:4px;line-height:1.9;">${r.snippet}</div>
+        </div>
+      `).join("");
+    }
+
+    function onSearchResultClick(r) {
+      document.getElementById("searchPanel").classList.remove("active");
+      if (r.type === "quran") {
+        switchTab("mushaf");
+        document.getElementById("surahSelect").value = r.surahId;
+        loadSurah(r.surahId, false);
+        setTimeout(() => {
+          const el = document.getElementById(`ayah-${r.ayahId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            selectedAyahs = [r.ayahId];
+            updateAyahSelectionUI();
+          }
+        }, 200);
+      } else if (r.type === "book") {
+        switchTab("books");
+        openBookItem(r.id);
+      } else if (r.type === "audio") {
+        switchTab("audio");
+        playAudioTrack(r.url, r.title);
+      }
+    }
+
+    // ================== 2. مشغل الصوتيات المدمج داخل التطبيق حصراً (بدون فتح كروم نهائياً) ==================
+    function playAudioTrack(url, title, resumeTime = 0) {
+      if (!url || url === "0") {
+        showToast("هذا الملف غير مرفوع على السيرفر العام حالياً");
+        return;
+      }
+      const bar = document.getElementById("audioPlayerBar");
+      const audioEl = document.getElementById("mainAudioEl");
+      const statusBadge = document.getElementById("audioStatusBadge");
+
+      document.getElementById("nowPlayingTitle").textContent = "🎧 " + title;
+      statusBadge.textContent = "⏳ جاري التحميل داخل التطبيق...";
+      bar.style.display = "block";
+
+      // بناء قائمة روابط بديلة مشفرة (HTTPS) لتشغيل ملفات http://alamin-library.com داخل التطبيق دون الخروج لكروم
+      let candidates = [];
+      if (url.startsWith("http://")) {
+        const httpsDirect = url.replace("http://alamin-library.com", "https://alamin-library.com");
+        const httpsNew = url.replace("http://alamin-library.com", "https://new.alamin-library.com");
+        const proxy1 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const proxy2 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+        candidates = [proxy1, proxy2, url, httpsDirect, httpsNew];
+      } else {
+        candidates = [url, `https://corsproxy.io/?${encodeURIComponent(url)}`];
+      }
+
+      let tryIdx = 0;
+      function tryNextSource() {
+        if (tryIdx >= candidates.length) {
+          statusBadge.textContent = "⚠️ السيرفر الصوتي الأصلي لا يستجيب حالياً";
+          showToast("السيرفر الأصلي للدرس متوقف مؤقتاً؛ جرب تلاوات السور الكاملة ريثما نربط أرشيف تيليجرام");
+          return;
+        }
+        const currentCandidate = candidates[tryIdx++];
+        audioEl.src = currentCandidate;
+        if (resumeTime > 0) audioEl.currentTime = resumeTime;
+        const p = audioEl.play();
+        if (p !== undefined) {
+          p.then(() => {
+            statusBadge.textContent = "▶ يعمل الآن داخل التطبيق";
+          }).catch(() => {
+            tryNextSource();
+          });
+        }
+      }
+
+      audioEl.onerror = () => tryNextSource();
+      tryNextSource();
+
+      audioEl.ontimeupdate = () => {
+        saveProgress("audio", { url, title, time: Math.floor(audioEl.currentTime) });
+      };
+    }
+
+    // ================== 3. بقية دوال التطبيق (الخط، اللغات، المصحف، الكتب) ==================
+    function openFontModal() { document.getElementById("fontModalBackdrop").classList.add("show"); }
+    function closeFontModal() { document.getElementById("fontModalBackdrop").classList.remove("show"); }
 
     function setReadingFont(key, notify = true) {
       currentFontKey = key;
@@ -914,7 +1145,6 @@
       if (notify) showToast("تم تغيير خلفية القراءة");
     }
 
-    // ================== 5. نافذة اختيار اللغة باللمس ==================
     function openLangModal() {
       const container = document.getElementById("langButtonsList");
       container.innerHTML = Object.entries(I18N).map(([code, info]) => `
@@ -925,18 +1155,13 @@
       `).join("");
       document.getElementById("langModalBackdrop").classList.add("show");
     }
-
-    function closeLangModal() {
-      document.getElementById("langModalBackdrop").classList.remove("show");
-    }
-
+    function closeLangModal() { document.getElementById("langModalBackdrop").classList.remove("show"); }
     function selectLanguage(code) {
       applyLanguage(code);
       closeLangModal();
       showToast(`تم تغيير اللغة إلى ${I18N[code].name}`);
     }
 
-    // ================== 6. تحميل بيانات المصحف والكتب والصوتيات ==================
     async function loadQuranJson() {
       try {
         const res = await fetch("https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran.json");
@@ -961,9 +1186,7 @@
         apiCategories = catRes.data || (Array.isArray(catRes) ? catRes : []);
         apiBooks = bookRes.data || (Array.isArray(bookRes) ? bookRes : []);
         apiStatics = statRes.data || (Array.isArray(statRes) ? statRes : []);
-      } catch (e) {
-        console.warn("Error loading API JSONs:", e);
-      }
+      } catch (e) {}
     }
 
     async function loadLegacyBooksAndTawil() {
@@ -979,13 +1202,11 @@
       } catch (e) {}
     }
 
-    // جسر آمن لعرض صور الأغلفة حتى لو كانت شهادة السيرفر الأصلي منتهية
     function safeImageProxy(url) {
       if (!url || url === "0") return "";
       return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=320&output=webp`;
     }
 
-    // ================== 7. عرض السور وقفل التتابع للآيات ==================
     function loadSurah(surahId, resetScroll = true) {
       currentSurah = parseInt(surahId, 10);
       localStorage.setItem("roh_surah", currentSurah);
@@ -1057,16 +1278,13 @@
       updateAyahSelectionUI();
     }
 
-    // ================== 8. نافذة التأويل السفلية ==================
     function openTafsirSheet(customAyahId) {
       activeTafsirAyah = customAyahId || (selectedAyahs.length ? Math.min(...selectedAyahs) : 1);
       renderTafsirAyah(activeTafsirAyah);
       document.getElementById("tafsirBackdrop").classList.add("show");
     }
 
-    function closeTafsirSheet() {
-      document.getElementById("tafsirBackdrop").classList.remove("show");
-    }
+    function closeTafsirSheet() { document.getElementById("tafsirBackdrop").classList.remove("show"); }
 
     function stepTafsirAyah(delta) {
       const surah = quranData.find(s => s.id === currentSurah);
@@ -1095,7 +1313,7 @@
       }
 
       if (!explanation) {
-        explanation = `تأويل سورة ${surah.name} (الآية ${ayahId}) ضمن سلسلة «تأويل القرآن العظيم» للعلّامة الإنساني محمد أمين شيخو قدس سره.\n\nللحصول على المجلد الكامل بصيغة PDF أو الاستفسار، يمكنك مراسلتنا مباشرة عبر بوت تطبيق روح القرآن ونعيمه (@Rohalquraan_app_Bot).`;
+        explanation = `تأويل سورة ${surah.name} (الآية ${ayahId}) ضمن سلسلة «تأويل القرآن العظيم» للعلّامة الإنساني محمد أمين شيخو قدس سره.\n\n(جاري ربط قاعدة بيانات التأويل التفصيلية alamin748965.db من حزمة التطبيق).`;
       }
 
       document.getElementById("tafsirExplanationText").innerHTML = explanation.replace(/\n/g, "<br>");
@@ -1115,7 +1333,6 @@
       showToast("تم نسخ التأويل مع التوثيق الكامل");
     }
 
-    // ================== 9. الصفحات التعريفية مع حذف اسم مكتبة الأمين نهائياً ==================
     function openStaticPage(type) {
       toggleDrawer(false);
       const langKey = (currentLang === "fr" || currentLang === "en") ? currentLang : "ar";
@@ -1128,7 +1345,6 @@
       };
       document.getElementById("readerModalTitle").textContent = titles[type] || "";
 
-      // إذا ضغط على "حول التطبيق" نعرض النص الخاص بتطبيق "روح القرآن ونعيمه" بدون أي ذكر لمكتبة الأمين
       if (type === "about") {
         document.getElementById("readerModalBody").innerHTML = I18N[currentLang].customAbout || I18N.ar.customAbout;
         activeBookId = null;
@@ -1154,7 +1370,6 @@
       document.getElementById("readerModal").classList.add("show");
     }
 
-    // ================== 10. قسم الكتب (مع إصلاح الظهور والصور والكتب المحلية) ==================
     function renderBooksSection(selectedCatId = null) {
       const bookLang = (currentLang === "fr" || currentLang === "en") ? currentLang : "ar";
       const textCats = apiCategories.filter(c => !c.is_audio && c.language === bookLang);
@@ -1166,22 +1381,22 @@
       const catIds = new Set(textCats.map(c => Number(c.id)));
       let filtered = apiBooks.filter(b => !b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
 
-      // إذا لم توجد كتب من السيرفر نعرض الكتب المحلية
-      if (filtered.length === 0 && legacyBooks.length > 0 && bookLang === "ar") {
-        filtered = legacyBooks.map((lb, i) => ({
+      if ( legacyBooks.length > 0 && bookLang === "ar" && !selectedCatId ) {
+        const extra = legacyBooks.map((lb, i) => ({
           id: 9000 + i,
           name: lb.title || `كتاب ${i + 1}`,
           image_url: "",
-          category: { name: lb.category || "مؤلفات العلامة" },
+          category: { name: lb.category || "النصوص الكاملة" },
           _legacyContent: lb.content
         }));
+        filtered = [...extra, ...filtered];
       }
 
       const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
       const grid = document.getElementById("booksGrid");
 
       if (!filtered.length) {
-        grid.innerHTML = `<p style="grid-column:1/-1;padding:16px;color:var(--text-muted);">لا توجد كتب في هذا التصنيف حالياً.</p>`;
+        grid.innerHTML = `<p style="grid-column:1/-1;padding:16px;color:var(--text-muted);">جاري تحميل قائمة الكتب...</p>`;
         return;
       }
 
@@ -1198,7 +1413,7 @@
               <div class="book-title">${b.name}</div>
               <div>
                 <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;">
-                  <span>${(b.category && b.category.name) || "تطبيق روح القرآن"}</span>
+                  <span>${(b.category && b.category.name) || "روح القرآن"}</span>
                   <span>${p}%</span>
                 </div>
                 <div class="progress-track"><div class="progress-fill" style="width:${p}%"></div></div>
@@ -1220,7 +1435,10 @@
       activeBookId = bookId;
       document.getElementById("readerModalTitle").textContent = book.name;
 
-      const matchLegacy = book.content ? book : legacyBooks.find(lb => lb.title && (lb.title.includes(book.name) || book.name.includes(lb.title)));
+      const matchLegacy = book.content ? book : legacyBooks.find(lb => lb.title && (
+        normalizeArabic(lb.title).includes(normalizeArabic(book.name)) ||
+        normalizeArabic(book.name).includes(normalizeArabic(lb.title))
+      ));
       const bodyEl = document.getElementById("readerModalBody");
       const proxyImg = safeImageProxy(book.image_url);
 
@@ -1235,8 +1453,8 @@
               القسم: ${(book.category && book.category.name) || "المؤلفات العلمية"}
             </p>
             <div style="background:var(--primary-light);padding:16px;border-radius:14px;text-align:center;margin-top:14px;line-height:1.9;">
-              📖 هذا الكتاب متوفر بنسخته الكاملة عالية الدقة بصيغة <strong>PDF</strong> عبر أرشيف بوت <strong>روح القرآن ونعيمه</strong>.<br>
-              اضغط الزر أدناه لفتحه أو تحميله مباشرة:
+              📖 نص هذا الكتاب مخزن داخل قاعدة البيانات المحلية (<code>alamin748965.db</code>) أو متاح بصيغة <strong>PDF</strong> عبر البوت.<br>
+              اضغط الزر أدناه لاستلام نسخة PDF الكاملة فوراً:
             </div>
             <a href="https://t.me/Rohalquraan_app_Bot" target="_blank" class="bot-cta-btn" style="margin-top:16px;font-size:15px;padding:12px 22px;">
               📥 استلام الكتاب PDF عبر البوت (@Rohalquraan_app_Bot)
@@ -1275,7 +1493,6 @@
       body.style.fontSize = Math.min(32, Math.max(15, cur + delta)) + "px";
     }
 
-    // ================== 11. قسم الصوتيات (تلاوات السور المضمونة 100% + الدروس الصوتية) ==================
     function switchAudioMode(mode) {
       audioMode = mode;
       document.getElementById("btnAudioModeQuran").classList.toggle("primary", mode === "quran");
@@ -1287,7 +1504,6 @@
       const bar = document.getElementById("audioCatsBar");
       const container = document.getElementById("audioListContainer");
 
-      // الوضع الأول: تلاوات السور الكاملة عبر سيرفر HTTPS مضمون 100%
       if (audioMode === "quran") {
         const reciters = [
           { id: "shatri", name: "الشيخ أبو بكر الشاطري", server: "https://server11.mp3quran.net/shatri" },
@@ -1310,16 +1526,15 @@
             <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px 14px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
               <div>
                 <div style="font-weight:700;font-size:15px;">${s.id}. سورة ${s.name}</div>
-                <div style="font-size:12px;color:var(--text-muted);">عدد آياتها: ${s.total_verses} آية • تلاوة كاملة</div>
+                <div style="font-size:12px;color:var(--text-muted);">عدد آياتها: ${s.total_verses} آية • استماع داخلي مباشر</div>
               </div>
-              <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 16px;" onclick="playAudioTrack('${mp3Url}', 'تلاوة سورة ${s.name}')">▶ استماع</button>
+              <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 16px;" onclick="playAudioTrack('${mp3Url}', 'تلاوة سورة ${s.name}')">▶ تشغيل</button>
             </div>
           `;
         }).join("");
         return;
       }
 
-      // الوضع الثاني: الدروس الصوتية وتأويل القرآن
       const audioLang = currentLang === "en" ? "en" : "ar";
       const audioCats = apiCategories.filter(c => c.is_audio && c.language === audioLang);
 
@@ -1329,47 +1544,17 @@
       const catIds = new Set(audioCats.map(c => Number(c.id)));
       const tracks = apiBooks.filter(b => b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
 
-      container.innerHTML = tracks.slice(0, 80).map(t => `
+      container.innerHTML = tracks.slice(0, 100).map(t => `
         <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
           <div>
             <div style="font-weight:600;font-size:14.5px;">${t.title || t.name}</div>
             <div style="font-size:12px;color:var(--text-muted);">${(t.category && t.category.name) || t.album || ""}</div>
           </div>
-          <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 14px;" onclick="playAudioTrack('${(t.url || '').replace(/'/g, "\\'")}', '${(t.title || t.name || '').replace(/'/g, "\\'")}')">▶ تشغيل</button>
+          <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 14px;" onclick="playAudioTrack('${(t.url || '').replace(/'/g, "\\'")}', '${(t.title || t.name || '').replace(/'/g, "\\'")}')">▶ استماع</button>
         </div>
       `).join("");
     }
 
-    function playAudioTrack(url, title, resumeTime = 0) {
-      if (!url || url === "0") {
-        showToast("هذا الدرس الصوتي متاح عبر أرشيف البوت");
-        return;
-      }
-      const bar = document.getElementById("audioPlayerBar");
-      const audioEl = document.getElementById("mainAudioEl");
-      document.getElementById("nowPlayingTitle").textContent = "🎧 يعمل الآن: " + title;
-      bar.style.display = "block";
-
-      audioEl.src = url;
-      audioEl.currentTime = resumeTime || 0;
-      audioEl.play().then(() => {
-        showToast("جاري التشغيل: " + title);
-      }).catch(() => {
-        // إذا كان الرابط http غير مشفر يمنعه المتصفح داخل https، فنفتح الرابط في تبويب مباشر أو نبه القارئ
-        if (url.startsWith("http://")) {
-          showToast("الدرس يعمل على رابط خارجي، جاري فتحه...");
-          window.open(url, "_blank");
-        } else {
-          showToast("تعذر تشغيل الملف الصوتي من المصدر حالياً");
-        }
-      });
-
-      audioEl.ontimeupdate = () => {
-        saveProgress("audio", { url, title, time: Math.floor(audioEl.currentTime) });
-      };
-    }
-
-    // استماع للآيات المحددة في المصحف بصوت القارئ المختار
     function changeReciter(rec) {
       currentReciter = rec;
       localStorage.setItem("roh_reciter", rec);
@@ -1388,7 +1573,6 @@
       audio.play().catch(() => showToast("تأكد من الاتصال بالإنترنت لتشغيل التلاوة"));
     }
 
-    // ================== 12. متابعة التقدم الذكي ==================
     function saveProgress(type, data) {
       const state = JSON.parse(localStorage.getItem("roh_progress_hub") || "{}");
       state[type] = data;
@@ -1438,7 +1622,6 @@
       }
     }
 
-    // ================== 13. تطبيق اللغة المختارة ==================
     function applyLanguage(lang) {
       currentLang = I18N[lang] ? lang : "ar";
       localStorage.setItem("roh_lang", currentLang);
@@ -1490,79 +1673,14 @@
       }
     }
 
-    // ================== 14. البحث الذكي المرقّم بالزر فقط ==================
     function toggleSearch() {
-      document.getElementById("searchPanel").classList.toggle("active");
-    }
-
-    function executeSmartSearch() {
-      const q = document.getElementById("searchInput").value.trim();
-      const box = document.getElementById("searchResults");
-      if (q.length < 2) {
-        box.innerHTML = `<div style="padding:8px;color:var(--text-muted);">أدخل كلمتين أو أكثر للبحث الدقيق...</div>`;
-        return;
-      }
-
-      let results = [];
-      quranData.forEach(s => {
-        s.verses.forEach(v => {
-          if (v.text.includes(q)) {
-            results.push({
-              type: "quran", surahId: s.id, ayahId: v.id,
-              title: `سورة ${s.name} • آية ${v.id}`,
-              snippet: v.text.replace(new RegExp(q, "g"), `<mark>${q}</mark>`)
-            });
-          }
-        });
-      });
-
-      apiBooks.forEach(b => {
-        if ((b.name && b.name.toLowerCase().includes(q.toLowerCase())) || (b.title && b.title.toLowerCase().includes(q.toLowerCase()))) {
-          results.push({
-            type: b.is_audio ? "audio" : "book", id: b.id, url: b.url,
-            title: `${b.is_audio ? '🎧' : '📗'} ${b.name}`,
-            snippet: (b.category && b.category.name) || ""
-          });
-        }
-      });
-
-      if (!results.length) {
-        box.innerHTML = `<div style="padding:10px;">لا توجد نتائج مطابقة لـ "${q}".</div>`;
-        return;
-      }
-
-      box.innerHTML = results.slice(0, 40).map((r, idx) => `
-        <div class="search-item" onclick='onSearchResultClick(${JSON.stringify(r).replace(/'/g, "&#39;")})'>
-          <div><span class="search-num">${idx + 1}</span> <strong>${r.title}</strong></div>
-          <div style="font-size:13.5px;margin-top:4px;">${r.snippet}</div>
-        </div>
-      `).join("");
-    }
-
-    function onSearchResultClick(r) {
-      document.getElementById("searchPanel").classList.remove("active");
-      if (r.type === "quran") {
-        switchTab("mushaf");
-        document.getElementById("surahSelect").value = r.surahId;
-        loadSurah(r.surahId, false);
-        setTimeout(() => {
-          const el = document.getElementById(`ayah-${r.ayahId}`);
-          if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
-            selectedAyahs = [r.ayahId];
-            updateAyahSelectionUI();
-          }
-        }, 200);
-      } else if (r.type === "book") {
-        switchTab("books");
-        openBookItem(r.id);
-      } else if (r.type === "audio") {
-        switchTab("audio");
-        playAudioTrack(r.url, r.title);
+      const panel = document.getElementById("searchPanel");
+      panel.classList.toggle("active");
+      if (panel.classList.contains("active")) {
+        document.getElementById("searchInput").focus();
       }
     }
 
-    // ================== 15. الأدوات المساعدة والاختبارات ==================
     async function toggleWakeLock(enabled) {
       if (!("wakeLock" in navigator)) {
         showToast("متصفحك الحالي لا يدعم ميزة إبقاء الشاشة مضاءة تلقائياً");
@@ -1726,10 +1844,10 @@
       document.getElementById("readerModalTitle").textContent = "🎓 الجولة التعريفية السريعة";
       document.getElementById("readerModalBody").innerHTML = `
         <h3>أهلاً بك في تطبيق «روح القرآن ونعيمه»</h3>
-        <p><strong>1️⃣ تصفح المصحف والتأويل:</strong> اضغط على أي آية لتحديدها (التحديد متتابع دائماً لحفظ سياق الآيات الكريمة)، ثم اضغط على زر «📖 التأويل» لقراءة شرحها أو «🔊 استماع» لسماع تجويدها.</p>
-        <p><strong>2️⃣ تخصيص الخط والخلفية (Aa):</strong> من زر (Aa) في أعلى الشاشة يمكنك التبديل بين 3 خطوط مريحة جداً للعين وتكبير الخط واختيار الخلفية الأنسب لنظرك.</p>
-        <p><strong>3️⃣ اختيار اللغة (🌐):</strong> من زر الكرة الأرضية يمكنك التبديل بلمسة واحدة إلى اللغة الفرنسية (Français) أو الإنجليزية لعرض الكتب المترجمة.</p>
-        <p><strong>4️⃣ حفظ التقدم التلقائي:</strong> يحفظ التطبيق مكان توقفك تلقائياً في السور والكتب والصوتيات لتعود إليه في أي وقت بضغطة زر.</p>
+        <p><strong>1️⃣ البحث القرآني الجذري الذكي (🔍):</strong> جرب البحث بأي كلمة مثل «سرقة» أو «رحمة» وسيقوم المحرك باستخراج جميع الآيات والمشتقات اللغوية وتلوينها بالأصفر.</p>
+        <p><strong>2️⃣ تصفح المصحف والتأويل:</strong> اضغط على أي آية لتحديدها ثم اضغط «📖 التأويل» لقراءة شرحها أو «🔊 استماع» لسماع تجويدها.</p>
+        <p><strong>3️⃣ تخصيص الخط والخلفية (Aa):</strong> من زر (Aa) في أعلى الشاشة يمكنك التبديل بين 3 خطوط مريحة للعين وتكبير الخط واختيار الخلفية.</p>
+        <p><strong>4️⃣ الصوتيات الداخلية:</strong> جميع التلاوات والدروس تشتغل داخل مشغل التطبيق مباشرة دون الخروج للمتصفح.</p>
       `;
       document.getElementById("readerModal").classList.add("show");
     }
@@ -1740,7 +1858,6 @@
       else { navigator.clipboard.writeText(text); showToast("تم نسخ رابط مشاركة التطبيق"); }
     }
 
-    // تنظيف الشوائب وحذف اسم مكتبة الأمين من أي نص مستورد
     function cleanTextAndBrand(str) {
       if (!str) return "";
       return str
