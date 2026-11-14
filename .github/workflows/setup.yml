@@ -1,110 +1,124 @@
-name: Parse & Organize Fetched Alamin Data
+name: Telegram Bot Quiz & Content Manager
 
 on:
   push:
     paths:
       - '.github/workflows/setup.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
 
 jobs:
-  parse-data:
+  bot-cms:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install requests
-        run: pip install requests urllib3
+        run: pip install requests
 
-      - name: Analyze Books, Tafsir Category & Static Info
+      - name: Process Admin Commands for Quizzes
+        env:
+          BOT_TOKEN: ${{ secrets.BO_TOKEN }}
+          ADMIN_ID: "5205216077"
         run: |
           python3 - << 'EOF'
-          import os, json, requests, urllib3
-          from collections import Counter
-          urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+          import os, json, requests
 
-          with open("data/api_v1_categories.json", "r", encoding="utf-8") as f:
-              cats = json.load(f).get("data", [])
+          TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+          ADMIN_ID = str(os.environ.get("ADMIN_ID", "5205216077")).strip()
+          os.makedirs("data", exist_ok=True)
+          quiz_file = "data/quizzes.json"
 
-          with open("data/api_v1_books.json", "r", encoding="utf-8") as f:
-              books = json.load(f).get("data", [])
-
-          with open("data/api_v1_static-info.json", "r", encoding="utf-8") as f:
-              statics = json.load(f).get("data", [])
-
-          # 1. تحليل الصفحات الثابتة (حول التطبيق، حياة العلامة، دعوتنا، محقق الكتب...)
-          static_summary = [
-              {"id": s.get("id"), "lang": s.get("language"), "name": s.get("name"), "len": len(s.get("content", ""))}
-              for s in statics
+          default_quizzes = [
+              {
+                  "q": "ما هي الآية الكريمة التي تبيّن أن منهاج الدعوة إلى الله يقوم على البصيرة؟",
+                  "options": [
+                      "﴿قُلْ هَٰذِهِ سَبِيلِي أَدْعُو إِلَى اللَّهِ عَلَىٰ بَصِيرَةٍ أَنَا وَمَنِ اتَّبَعَنِي﴾ [يوسف: 108]",
+                      "﴿ادْعُ إِلَىٰ سَبِيلِ رَبِّكَ بِالْحِكْمَةِ وَالْمَوْعِظَةِ الْحَسَنَةِ﴾ [النحل: 125]",
+                      "﴿وَمَنْ أَحْسَنُ قَوْلًا مِّمَّن دَعَا إِلَى اللَّهِ﴾ [فصلت: 33]"
+                  ],
+                  "correct": 0,
+                  "explain": "تتصدر آية سورة يوسف (108) منهج «دعوتنا إلى الله» في تعريف الناس بكمال الله ورحمته وعدله عن بصيرةٍ وتحقيق."
+              },
+              {
+                  "q": "كم عدد مجلدات سلسلة «تأويل القرآن العظيم» للعلامة محمد أمين شيخو؟",
+                  "options": ["5 مجلدات", "9 مجلدات (تغطي القرآن الكريم وجزء عمّ)", "3 مجلدات"],
+                  "correct": 1,
+                  "explain": "تضم السلسلة مجلدات تأويل القرآن العظيم بالإضافة إلى تأويل جزء عمّ وأسرار السبع المثاني."
+              }
           ]
 
-          # 2. تحليل الأقسام واللغات المتوفرة
-          cat_langs = Counter(c.get("language") for c in cats)
-          ar_cats = [
-              {"id": c.get("id"), "name": c.get("name"), "is_audio": c.get("is_audio"), "books_count": c.get("books_count")}
-              for c in cats if c.get("language") == "ar"
-          ]
-          other_cats = [
-              {"id": c.get("id"), "lang": c.get("language"), "name": c.get("name"), "is_audio": c.get("is_audio"), "books_count": c.get("books_count")}
-              for c in cats if c.get("language") != "ar"
-          ]
+          if os.path.exists(quiz_file):
+              with open(quiz_file, "r", encoding="utf-8") as f:
+                  quizzes = json.load(f)
+          else:
+              quizzes = default_quizzes
 
-          # 3. فحص كتب قسم "تأويل القرآن العظيم" (cat_id == 2) وأمثلة من الكتب النصية غير الصوتية
-          tafsir_books = [b for b in books if b.get("cat_id") == 2]
-          text_books = [b for b in books if not b.get("is_audio")]
-          audio_books = [b for b in books if b.get("is_audio")]
+          def send_msg(chat_id, text):
+              requests.post(
+                  f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                  json={"chat_id": chat_id, "text": text},
+                  timeout=15
+              )
 
-          # 4. فحص مكان ملف alamin748965.db على السيرفرين
-          db_check = {}
-          for test_url in [
-              "http://alamin-library.com/alamin748965.db",
-              "http://alamin-library.com/db/alamin748965.db",
-              "https://new.alamin-library.com/media/alamin748965.db",
-              "https://new.alamin-library.com/storage/alamin748965.db"
-          ]:
-              try:
-                  r = requests.head(test_url, timeout=10, verify=False, allow_redirects=True)
-                  db_check[test_url] = {"status": r.status_code, "size": r.headers.get("Content-Length")}
-              except Exception as e:
-                  db_check[test_url] = {"err": str(e)}
+          up = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?limit=50", timeout=20).json()
+          last_update_id = None
+          changed = False
 
-          # 5. فرز وحفظ البيانات في مجلدات لغات معزولة لمنع أي تضارب
-          for lang in ["ar", "en", "fr"]:
-              os.makedirs(f"data/{lang}", exist_ok=True)
-              lang_cats = [c for c in cats if c.get("language") == lang]
-              lang_cat_ids = {c.get("id") for c in lang_cats}
-              lang_books = [b for b in books if (b.get("category") or {}).get("language") == lang or b.get("cat_id") in lang_cat_ids]
-              lang_statics = [s for s in statics if s.get("language") == lang]
+          for item in up.get("result", []):
+              last_update_id = item["update_id"]
+              msg = item.get("message") or {}
+              sender_id = str((msg.get("from") or {}).get("id", ""))
+              text = (msg.get("text") or "").strip()
 
-              with open(f"data/{lang}/categories.json", "w", encoding="utf-8") as f:
-                  json.dump(lang_cats, f, ensure_ascii=False, indent=2)
-              with open(f"data/{lang}/books.json", "w", encoding="utf-8") as f:
-                  json.dump(lang_books, f, ensure_ascii=False, indent=2)
-              with open(f"data/{lang}/static_info.json", "w", encoding="utf-8") as f:
-                  json.dump(lang_statics, f, ensure_ascii=False, indent=2)
+              if sender_id != ADMIN_ID or not text:
+                  continue
 
-          summary = {
-              "total_categories": len(cats),
-              "categories_by_language": dict(cat_langs),
-              "total_books_and_audios": len(books),
-              "total_text_books": len(text_books),
-              "total_audio_items": len(audio_books),
-              "static_pages_found": static_summary,
-              "arabic_categories": ar_cats,
-              "non_arabic_categories": other_cats,
-              "tafsir_cat_2_books": tafsir_books[:5],
-              "sample_text_books": text_books[:5],
-              "db_url_checks": db_check
-          }
+              if text.startswith("/list_quizzes"):
+                  lines = ["📋 قائمة الاختبارات الحالية في التطبيق:\n"]
+                  for i, qz in enumerate(quizzes, 1):
+                      lines.append(f"{i}) {qz['q']}")
+                  lines.append("\n💡 لحذف سؤال أرسل: /del_quiz رقم_السؤال")
+                  send_msg(ADMIN_ID, "\n".join(lines))
 
-          with open("data/new_api_report.json", "w", encoding="utf-8") as f:
-              json.dump(summary, f, ensure_ascii=False, indent=2)
+              elif text.startswith("/add_quiz"):
+                  raw = text.replace("/add_quiz", "", 1).strip()
+                  parts = [p.strip() for p in raw.split("|")]
+                  if len(parts) >= 6:
+                      q_text = parts[0]
+                      opts = [parts[1], parts[2], parts[3]]
+                      corr = max(0, min(2, int(parts[4]) - 1)) if parts[4].isdigit() else 0
+                      exp = parts[5]
+                      quizzes.append({"q": q_text, "options": opts, "correct": corr, "explain": exp})
+                      changed = True
+                      send_msg(ADMIN_ID, f"✅ تم إضافة الاختبار بنجاح! (إجمالي الأسئلة الآن: {len(quizzes)})")
+                  else:
+                      send_msg(ADMIN_ID, "⚠️ صيغة الإضافة:\n/add_quiz السؤال | خيار1 | خيار2 | خيار3 | رقم_الصحيح(1-3) | الشرح")
+
+              elif text.startswith("/del_quiz"):
+                  num_str = text.replace("/del_quiz", "", 1).strip()
+                  if num_str.isdigit():
+                      idx = int(num_str) - 1
+                      if 0 <= idx < len(quizzes):
+                          removed = quizzes.pop(idx)
+                          changed = True
+                          send_msg(ADMIN_ID, f"🗑️ تم حذف السؤال: ({removed['q']}) بنجاح!")
+                      else:
+                          send_msg(ADMIN_ID, "⚠️ رقم السؤال غير موجود.")
+
+          if last_update_id is not None:
+              requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?offset={last_update_id + 1}", timeout=10)
+
+          with open(quiz_file, "w", encoding="utf-8") as f:
+              json.dump(quizzes, f, ensure_ascii=False, indent=2)
           EOF
 
-      - name: Commit Organized Data
+      - name: Commit Updated Quizzes
         run: |
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
-          git add data/
-          git diff --staged --quiet || git commit -m "Organize multi-language data and generate summary"
+          git add data/quizzes.json
+          git diff --staged --quiet || git commit -m "Update quizzes via Telegram Bot CMS"
           git push
