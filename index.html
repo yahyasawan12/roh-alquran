@@ -78,20 +78,21 @@
     @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
     .custom-modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
       z-index: 350; display: none; align-items: center; justify-content: center; padding: 16px;
     }
     .custom-modal-backdrop.show { display: flex; }
     .custom-modal {
       background: var(--bg-card); color: var(--text-main);
-      width: 100%; max-width: 400px; border-radius: 20px; padding: 20px;
+      width: 100%; max-width: 410px; border-radius: 20px; padding: 20px;
       box-shadow: 0 12px 32px rgba(0,0,0,0.3); border: 1px solid var(--border);
+      max-height: 90vh; overflow-y: auto;
     }
     .modal-head {
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
     }
-    .modal-head h3 { font-size: 16.5px; color: var(--primary); }
+    .modal-head h3 { font-size: 16px; color: var(--primary); }
     .lang-option-btn {
       width: 100%; padding: 12px 14px; margin-bottom: 8px;
       border-radius: 12px; border: 1.5px solid var(--border);
@@ -110,7 +111,7 @@
     }
     .c-circle.active { border: 3px solid var(--primary); transform: scale(1.08); }
 
-    /* شريط البحث الذكي الجذري */
+    /* البحث المدمج بالذكاء الاصطناعي */
     .search-panel {
       background: var(--bg-card); padding: 12px;
       border-bottom: 1px solid var(--border); display: none;
@@ -126,8 +127,15 @@
       background: var(--primary); color: #fff; border: none;
       padding: 0 18px; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer;
     }
+    .ai-answer-box {
+      margin-top: 10px; padding: 12px 14px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary-light), var(--bg-main));
+      border: 1px solid var(--primary); font-size: 14px; line-height: 1.85;
+      display: none;
+    }
+    .ai-answer-box.show { display: block; }
     .search-results {
-      margin-top: 10px; max-height: 350px; overflow-y: auto;
+      margin-top: 10px; max-height: 360px; overflow-y: auto;
       border-top: 1px solid var(--border); padding-top: 8px;
     }
     .search-item {
@@ -207,6 +215,12 @@
       transition: background 0.15s; display: inline;
     }
     .ayah-span.selected { background: var(--primary-light); border-bottom: 2px solid var(--primary); }
+    .ayah-span.playing-now {
+      background: #BBF7D0 !important;
+      color: #064E3B !important;
+      outline: 2px solid #15803D;
+      border-radius: 8px;
+    }
     .ayah-span.bm-yellow { background: rgba(250, 204, 21, 0.35); }
     .ayah-num {
       display: inline-flex; align-items: center; justify-content: center;
@@ -227,12 +241,13 @@
     .toolbar-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
     .toolbar-btns { display: flex; gap: 6px; flex-wrap: wrap; }
     .tb-btn {
-      flex: 1; min-width: 72px; padding: 8px 6px; border-radius: 9px;
+      flex: 1; min-width: 68px; padding: 8px 6px; border-radius: 9px;
       border: 1px solid var(--border); background: var(--bg-main);
       color: var(--text-main); font-family: inherit; font-size: 12.5px;
       font-weight: 600; cursor: pointer; text-align: center;
     }
     .tb-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tb-btn.danger { background: #DC2626; color: #fff; border-color: #DC2626; }
 
     .tafsir-sheet-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.55);
@@ -383,9 +398,27 @@
     <div class="top-bar-left">
       <button class="icon-btn" onclick="openFontModal()" title="الخط والمظهر">Aa</button>
       <button class="icon-btn" onclick="openLangModal()" title="اللغة">🌐</button>
-      <button class="icon-btn" onclick="toggleSearch()" title="بحث">🔍</button>
+      <button class="icon-btn" onclick="toggleSearch()" title="بحث ذكي">🔍</button>
     </div>
   </header>
+
+  <!-- نافذة حفظ ومشاركة البطاقة المصورة (تعمل 100% داخل تيليجرام وأندرويد) -->
+  <div class="custom-modal-backdrop" id="imageCardModalBackdrop" onclick="if(event.target===this)closeImageCardModal()">
+    <div class="custom-modal" style="text-align:center;">
+      <div class="modal-head">
+        <h3>🖼️ بطاقة الآية الكريمة جاهزة</h3>
+        <button onclick="closeImageCardModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-main);">✕</button>
+      </div>
+      <img id="generatedCardPreview" src="" alt="بطاقة الآية" style="width:100%;border-radius:12px;border:1px solid var(--border);margin-bottom:12px;" />
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;">
+        اضغط الزر أدناه لمشاركة أو حفظ البطاقة مباشرة، أو اضغط مطولاً على الصورة لاختيار «حفظ الصورة».
+      </p>
+      <div style="display:flex;gap:8px;">
+        <button class="tb-btn primary" style="padding:11px;" onclick="shareOrSaveGeneratedCard()">📤 مشاركة / حفظ في الجهاز</button>
+        <button class="tb-btn" style="padding:11px;" onclick="closeImageCardModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
 
   <!-- نافذة اختيار اللغة باللمس -->
   <div class="custom-modal-backdrop" id="langModalBackdrop" onclick="if(event.target===this)closeLangModal()">
@@ -434,12 +467,14 @@
     </div>
   </div>
 
-  <!-- لوحة البحث الذكي الجذري -->
+  <!-- لوحة البحث المدمج بالذكاء الاصطناعي -->
   <section class="search-panel" id="searchPanel">
     <div class="search-row">
-      <input type="text" id="searchInput" class="search-input" placeholder="ابحث بأي كلمة أو جذر (مثال: سرقة، صلاة، رحمة)..." onkeydown="if(event.key==='Enter')executeSmartSearch()" />
-      <button class="search-btn" id="ui-search-btn" onclick="executeSmartSearch()">🔍 بحث</button>
+      <input type="text" id="searchInput" class="search-input" placeholder="ابحث بالذكاء الاصطناعي أو بالكلمة (مثال: سرقة، الزكاة، الصبر)..." onkeydown="if(event.key==='Enter')executeSmartSearch()" />
+      <button class="search-btn" id="ui-search-btn" onclick="executeSmartSearch()">🔍 بحث ذكي</button>
     </div>
+    <!-- صندوق إجابة الذكاء الاصطناعي -->
+    <div class="ai-answer-box" id="aiSearchBox"></div>
     <div class="search-results" id="searchResults"></div>
   </section>
 
@@ -468,7 +503,7 @@
       </div>
       <div class="resume-pill" onclick="resumeLastAudio()">
         <strong id="ui-res-audio">🎧 آخر استماع</strong>
-        <span id="resAudioText">اختر سورة أو درساً</span>
+        <span id="resAudioText">اختر سورة للاستماع</span>
       </div>
     </div>
   </section>
@@ -498,14 +533,14 @@
     <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
       <h3 id="ui-books-heading" style="color:var(--primary);">📚 المكتبة المقروءة</h3>
       <a href="https://t.me/Rohalquraan_app_Bot" target="_blank" class="bot-cta-btn" style="margin:0;">
-        📥 طلب نسخ PDF عبر البوت
+        📥 طلب واستلام الكتب PDF عبر البوت
       </a>
     </div>
     <div class="cats-bar" id="bookCatsBar"></div>
     <div class="books-grid" id="booksGrid"></div>
   </main>
 
-  <!-- التبويب 3: الصوتيات وتلاوات القرآن الكاملة (تعمل داخل التطبيق حصراً) -->
+  <!-- التبويب 3: الصوتيات وتلاوات القرآن الكاملة -->
   <main class="tab-view" id="tab-audio">
     <h3 id="ui-audio-heading" style="color:var(--primary);margin-bottom:10px;">🎧 التلاوات القرآنية والدروس الصوتية</h3>
 
@@ -519,28 +554,31 @@
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="tb-btn primary" id="btnAudioModeQuran" onclick="switchAudioMode('quran')">🎙️ تلاوات السور الكاملة</button>
-      <button class="tb-btn" id="btnAudioModeLessons" onclick="switchAudioMode('lessons')">📚 الدروس الصوتية والتأويل</button>
+      <button class="tb-btn primary" id="btnAudioModeQuran" onclick="switchAudioMode('quran')">🎙️ تلاوات السور الكاملة (تعمل فوراً)</button>
+      <button class="tb-btn" id="btnAudioModeLessons" onclick="switchAudioMode('lessons')">📚 أرشيف الدروس الصوتية</button>
     </div>
 
     <div class="cats-bar" id="audioCatsBar"></div>
     <div id="audioListContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
   </main>
 
-  <!-- التبويب 4: مود الاختبارات التفاعلي -->
+  <!-- التبويب 4: مود الاختبارات التفاعلي (يدعم التحديث والحذف من البوت) -->
   <main class="tab-view" id="tab-quiz">
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:16px;">
-      <h3 style="color:var(--primary);margin-bottom:8px;" id="ui-quiz-title">🧠 اختبر بصيرتك في القرآن والمؤلفات</h3>
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:14px;" id="ui-quiz-sub">
-        أسئلة معرفية منتقاة من تأويل القرآن العظيم وعلومه مع الإجابة الموثقة.
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="color:var(--primary);" id="ui-quiz-title">🧠 اختبر بصيرتك</h3>
+        <span id="quizCounterBadge" style="font-size:12.5px;background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:12px;font-weight:700;"></span>
+      </div>
+      <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:14px;" id="ui-quiz-sub">
+        أسئلة معرفية متجددة (يمكنك إضافة أو حذف الأسئلة مباشرة عبر أوامر البوت).
       </p>
       <div id="quizCardBox" style="background:var(--bg-main);padding:16px;border-radius:12px;border:1px solid var(--border);">
         <div id="quizQuestionText" style="font-weight:700;font-size:16px;margin-bottom:12px;"></div>
         <div id="quizOptionsBox" style="display:flex;flex-direction:column;gap:8px;"></div>
         <div id="quizAnswerReveal" style="display:none;margin-top:12px;padding:12px;background:var(--primary-light);border-radius:10px;font-size:14.5px;"></div>
         <div style="display:flex;gap:8px;margin-top:14px;">
-          <button class="tb-btn primary" onclick="revealQuizAnswer()" id="ui-quiz-reveal">👁️ اضغط لعرض الإجابة والشرح</button>
-          <button class="tb-btn" onclick="nextQuizQuestion()" id="ui-quiz-next">🔄 سؤال جديد</button>
+          <button class="tb-btn primary" onclick="revealQuizAnswer()" id="ui-quiz-reveal">👁️ اضغط لعرض الإجابة</button>
+          <button class="tb-btn" onclick="nextQuizQuestion()" id="ui-quiz-next">🔄 السؤال التالي</button>
         </div>
       </div>
     </div>
@@ -554,9 +592,9 @@
     </div>
     <div class="toolbar-btns">
       <button class="tb-btn primary" onclick="openTafsirSheet()">📖 التأويل</button>
-      <button class="tb-btn" onclick="playSelectedAyahsAudio()">🔊 استماع</button>
+      <button class="tb-btn" id="btnPlayAyahs" onclick="togglePlaySelectedAyahs()">🔊 استماع</button>
       <button class="tb-btn" onclick="colorSelectedAyahs('bm-yellow')">🟨 تمييز</button>
-      <button class="tb-btn" onclick="copySelectedAyahs()">📋 نسخ موثق</button>
+      <button class="tb-btn" onclick="copySelectedAyahs()">📋 نسخ</button>
       <button class="tb-btn" onclick="shareAsImageCard()">🖼️ بطاقة</button>
     </div>
   </div>
@@ -686,7 +724,7 @@
       ar: {
         dir: "rtl", name: "العربية", flag: "🇸🇾",
         appTitle: "روح القرآن ونعيمه",
-        searchBtn: "🔍 بحث", searchPh: "ابحث بأي كلمة أو جذر (مثال: سرقة، صلاة، رحمة)...",
+        searchBtn: "🔍 بحث ذكي", searchPh: "ابحث بالذكاء الاصطناعي أو بالكلمة (مثال: سرقة، الزكاة، الصبر)...",
         resumeTitle: "⏱️ أكمل من حيث توقفت",
         resQuran: "📖 الورد القرآني", resBook: "📗 آخر كتاب", resAudio: "🎧 آخر استماع",
         tabMushaf: "تصفح", tabBooks: "الكتب", tabAudio: "الصوتيات", tabQuiz: "اختبر بصيرتك",
@@ -700,8 +738,8 @@
           <h2>حول تطبيق «روح القرآن ونعيمه»</h2>
           <p>يتشرف تطبيق <strong>«روح القرآن ونعيمه»</strong> بتقديم نص القرآن الكريم كاملاً برسمه الواضح المريح للعين، مرفقاً بتأويله العظيم وتلاوات نخبة من القراء المتقنين، ومؤلفات العلّامة الإنساني الجليل <strong>محمد أمين شيخو</strong> قدس سره، التي جمعها وحققها المربي الأستاذ <strong>عبد القادر يحيى الشهير بالديراني</strong>.</p>
           <h3>أهم مزايا التطبيق:</h3>
-          <p>• <strong>محرك بحث جذري وصرفي ذكي:</strong> يبحث في آيات القرآن الكريم ومشتقاتها وجذورها اللغوية وفي المؤلفات بدقة فائقة.</p>
-          <p>• <strong>تأويل الآيات آيةً بآية:</strong> مع حفظ السياق القرآني المتتابع وإمكانية النسخ الموثق أو المشاركة كبطاقة مصورة.</p>
+          <p>• <strong>البحث القرآني المدعوم بالذكاء الاصطناعي:</strong> يجمع بين الفهم الدلالي للذكاء الاصطناعي والدقة اللغوية لاستخراج الآيات والمفاهيم المطلوبة فوراً.</p>
+          <p>• <strong>تلاوة متصلة للآيات المحددة:</strong> استمع لتجويد الآيات التي تحددها آيةً تلو الأخرى بشكل متصل مع تتبع بصري للآية المقروءة.</p>
           <p>• <strong>بيئة قراءة مريحة:</strong> خطوط عربية منتقاة بعناية و5 خلفيات مريحة للعين مع ميزة إبقاء الشاشة مضاءة ومتابعة التقدم التلقائي.</p>
         `
       },
@@ -788,10 +826,13 @@
     let apiStatics = [];
     let activeBookId = null;
     let wakeLockSentinel = null;
+    let ayahAudioPlayer = null;
+    let isRecitingAyahs = false;
+    let lastGeneratedBlob = null;
     const canvases = ["canvas-cream", "canvas-emerald", "canvas-sepia", "canvas-day", "canvas-night"];
     let canvasIdx = parseInt(localStorage.getItem("roh_canvas_idx") || "0", 10);
 
-    const QUIZ_BANK = [
+    let QUIZ_BANK = [
       {
         q: "ما هي الآية الكريمة التي تبيّن أن منهاج الدعوة إلى الله يقوم على البصيرة؟",
         options: [
@@ -830,16 +871,27 @@
       setReadingFont(currentFontKey, false);
       applyLanguage(currentLang);
       loadResumeBanner();
-      renderQuiz();
 
       await Promise.allSettled([
         loadQuranJson(),
         loadServerData(),
-        loadLegacyBooksAndTawil()
+        loadLegacyBooksAndTawil(),
+        loadDynamicQuizzes()
       ]);
       renderBooksSection();
       renderAudioSection();
+      renderQuiz();
     });
+
+    async function loadDynamicQuizzes() {
+      try {
+        const res = await fetch("data/quizzes.json?t=" + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) QUIZ_BANK = data;
+        }
+      } catch (e) {}
+    }
 
     function showToast(msg) {
       const box = document.getElementById("toastBox");
@@ -853,13 +905,82 @@
       showToast(`قريباً إن شاء الله • سيتم ربط قناة ${platformName} الرسمية لتطبيق روح القرآن ونعيمه قريباً`);
     }
 
-    // ================== 1. محرك البحث الجذري والصرفي العربي الذكي (يحل مشكلة "سرقة" وغيرها 100%) ==================
+    // ================== 1. تلاوة الآيات المتتالية (آية تلو الأخرى دون توقف بعد الأولى) ==================
+    function togglePlaySelectedAyahs() {
+      if (isRecitingAyahs) {
+        stopAyahRecitation();
+        return;
+      }
+      if (!selectedAyahs.length) return;
+
+      const sortedQueue = [...selectedAyahs].sort((a, b) => a - b);
+      let idx = 0;
+      isRecitingAyahs = true;
+      const btn = document.getElementById("btnPlayAyahs");
+      btn.textContent = "⏹️ إيقاف";
+      btn.classList.add("danger");
+
+      function playNextInQueue() {
+        document.querySelectorAll(".ayah-span").forEach(el => el.classList.remove("playing-now"));
+        if (!isRecitingAyahs || idx >= sortedQueue.length) {
+          stopAyahRecitation();
+          return;
+        }
+
+        const currentAyahId = sortedQueue[idx++];
+        const ayahEl = document.getElementById(`ayah-${currentAyahId}`);
+        if (ayahEl) {
+          ayahEl.classList.add("playing-now");
+          ayahEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        const sPad = String(currentSurah).padStart(3, "0");
+        const aPad = String(currentAyahId).padStart(3, "0");
+        const url = `https://everyayah.com/data/${currentReciter}/${sPad}${aPad}.mp3`;
+        const surah = quranData.find(s => s.id === currentSurah);
+
+        showToast(`🎙️ يتلو الآن: سورة ${surah ? surah.name : ''} • الآية (${currentAyahId}) من أصل (${sortedQueue[sortedQueue.length - 1]})`);
+
+        if (ayahAudioPlayer) {
+          ayahAudioPlayer.pause();
+          ayahAudioPlayer = null;
+        }
+        ayahAudioPlayer = new Audio(url);
+        ayahAudioPlayer.onended = () => {
+          if (isRecitingAyahs) playNextInQueue();
+        };
+        ayahAudioPlayer.onerror = () => {
+          showToast("تعذر تحميل صوت هذه الآية، جاري الانتقال للتالية...");
+          if (isRecitingAyahs) playNextInQueue();
+        };
+        ayahAudioPlayer.play().catch(() => {
+          stopAyahRecitation();
+          showToast("تأكد من الاتصال بالإنترنت لتشغيل التلاوة");
+        });
+      }
+
+      playNextInQueue();
+    }
+
+    function stopAyahRecitation() {
+      isRecitingAyahs = false;
+      if (ayahAudioPlayer) {
+        ayahAudioPlayer.pause();
+        ayahAudioPlayer = null;
+      }
+      document.querySelectorAll(".ayah-span").forEach(el => el.classList.remove("playing-now"));
+      const btn = document.getElementById("btnPlayAyahs");
+      if (btn) {
+        btn.textContent = "🔊 استماع";
+        btn.classList.remove("danger");
+      }
+    }
+
+    // ================== 2. البحث الذكي المدمج بالذكاء الاصطناعي + الميزان الصرفي الدقيق ==================
     function normalizeArabic(text) {
       if (!text) return "";
       return text
-        // إزالة كافة حركات التشكيل وعلامات الوقف والرسم العثماني والمدود
         .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "")
-        // توحيد الألفات والهمزات والتاء المربوطة والياء
         .replace(/[أإآٱ]/g, "ا")
         .replace(/[ؤئ]/g, "ء")
         .replace(/ة/g, "ه")
@@ -869,29 +990,35 @@
         .trim();
     }
 
-    // استخراج الجذع الصرفي والجذر الثلاثي للكلمة العربية (حتى تطابق "سرقة" كلاً من "السارق" و"السارقة" و"يسرقن" و"سرق")
-    function getArabicStemAndRoot(word) {
+    // استخراج الجذر الحقيقي دون حذف الحروف الأصلية للكلمة (فكلمة "سرقة" جذرها "سرق" فقط ولا تختلط أبداً بـ "تفرقة")
+    function extractStrictArabicCore(word) {
       let w = normalizeArabic(word).replace(/\s+/g, "");
-      if (w.length <= 2) return { norm: w, stem: w, root: w };
-
+      if (w.length <= 2) return { norm: w, core: w };
       const norm = w;
 
-      // 1. حذف السوابق الشائعة (وال، فال، بال، كال، لل، ال، و، ف، ب، ي، ت، ن، است، مست)
-      const prefixes = ["وال", "فال", "بال", "كال", "لل", "ال", "است", "مست", "يست", "تست"];
-      for (const p of prefixes) {
+      // حذف آل التعريف ومشتقاتها فقط
+      const articlePrefixes = ["وال", "فال", "بال", "كال", "لل", "ال"];
+      let hadArticle = false;
+      for (const p of articlePrefixes) {
         if (w.startsWith(p) && w.length - p.length >= 3) {
           w = w.slice(p.length);
+          hadArticle = true;
           break;
         }
       }
-      if (w.length >= 4 && /^[وفتنيسأا]/.test(w)) {
-        // حذف حروف المضارعة أو العطف إن بقي 3 حروف فأكثر
-        const stripped = w.slice(1);
-        if (stripped.length >= 3) w = stripped;
+
+      // حذف واو أو فاء العطف قبل الأفعال المضارعة (ويسرق، فيسرق، ولا يسرقن)
+      if (!hadArticle && w.length >= 4 && (w[0] === "و" || w[0] === "ف") && /^[يتنأ]/.test(w.slice(1))) {
+        w = w.slice(1);
       }
 
-      // 2. حذف اللواحق الشائعة (ات، ون، ين، ان، هم، هما، كم، نا، ها، وا، تن، تم، ه، ي، ك)
-      const suffixes = ["كما", "هما", "تم", "تن", "ون", "ين", "ان", "ات", "وا", "هم", "كم", "نا", "ها", "هن", "ه", "ي", "ك", "ن"];
+      // حذف التاء المربوطة في آخر الأسماء (سرقة -> سرق، السارقة -> سارق)
+      if (w.endsWith("ه") && w.length >= 4) {
+        w = w.slice(0, -1);
+      }
+
+      // حذف لواحق الجمع والضمائر الواضحة
+      const suffixes = ["ون", "ين", "ان", "ات", "وا", "هم", "كم", "نا", "ها"];
       for (const s of suffixes) {
         if (w.endsWith(s) && w.length - s.length >= 3) {
           w = w.slice(0, -s.length);
@@ -899,53 +1026,52 @@
         }
       }
 
-      const stem = w;
-
-      // 3. ردّ صيغ (فاعل -> فعل مثل سارق -> سرق، مفعول -> فعل مثل مسروق -> سرق، فعيل -> فعل)
-      let root = stem;
-      if (root.length === 4 && root[1] === "ا") {
-        // وزن فاعل: سارق -> سرق، كاتب -> كتب
-        root = root[0] + root[2] + root[3];
-      } else if (root.length === 5 && root[0] === "م" && (root[3] === "و" || root[3] === "ي")) {
-        // وزن مفعول: مسروق -> سرق
-        root = root[1] + root[2] + root[4];
-      } else if (root.length === 4 && (root[2] === "ي" || root[2] === "و" || root[2] === "ا")) {
-        // وزن فعيل / فعال / فعول:عليم -> علم، غفور -> غفر
-        root = root[0] + root[1] + root[3];
-      } else if (root.length > 3) {
-        // تجريد حروف الزيادة الشائعة مع الإبقاء على 3 حروف أصلية
-        const noWeak = root.replace(/[اوي]/g, "");
-        if (noWeak.length === 3) root = noWeak;
+      // حذف نون النسوة أو التوكيد في الأفعال المضارعة (يسرقن -> يسرق)
+      if (!hadArticle && /^[يتن]/.test(w) && w.endsWith("ن") && w.length >= 5) {
+        w = w.slice(0, -1);
       }
 
-      return { norm, stem, root };
+      // حذف حرف المضارعة (ي/ت/ن) فقط إذا لم تكن الكلمة معرفة بـ "ال" وبقي 3 حروف أصلية
+      if (!hadArticle && /^[يتن]/.test(w) && w.length === 4) {
+        w = w.slice(1);
+      }
+
+      // رد وزن (فاعل -> فعل) مثل (سارق -> سرق، كاتب -> كتب) بشرط تطابق الحروف الثلاثة الأصلية
+      let core = w;
+      if (core.length === 4 && core[1] === "ا") {
+        core = core[0] + core[2] + core[3];
+      }
+
+      return { norm, core };
     }
 
-    function executeSmartSearch() {
+    async function executeSmartSearch() {
       const rawQuery = document.getElementById("searchInput").value.trim();
       const box = document.getElementById("searchResults");
+      const aiBox = document.getElementById("aiSearchBox");
+
       if (rawQuery.length < 2) {
-        box.innerHTML = `<div style="padding:10px;color:var(--text-muted);">أدخل كلمة من حرفين أو أكثر للبحث...</div>`;
+        box.innerHTML = `<div style="padding:10px;color:var(--text-muted);">أدخل كلمة للبحث الذكي...</div>`;
+        aiBox.classList.remove("show");
         return;
       }
 
       const qNorm = normalizeArabic(rawQuery);
-      const qTokens = qNorm.split(" ").filter(Boolean).map(getArabicStemAndRoot);
+      const qTokens = qNorm.split(" ").filter(Boolean).map(extractStrictArabicCore);
 
       let exactResults = [];
-      let rootResults = [];
+      let derivativeResults = [];
 
-      // 1. البحث في القرآن الكريم (تطابق مباشر + تطابق جذري صرفي)
+      // 1. البحث الدقيق في القرآن الكريم (بدون نتائج عشوائية)
       quranData.forEach(s => {
         s.verses.forEach(v => {
           const vNorm = normalizeArabic(v.text);
           const rawWords = v.text.split(/\s+/);
 
-          // فحص التطابق المباشر للجملة أو الكلمة
           if (vNorm.includes(qNorm)) {
             const highlighted = rawWords.map(rw => {
-              const rwInfo = getArabicStemAndRoot(rw);
-              if (qTokens.some(qt => rwInfo.norm.includes(qt.norm) || rwInfo.stem === qt.stem || rwInfo.root === qt.root)) {
+              const info = extractStrictArabicCore(rw);
+              if (qTokens.some(qt => info.norm.includes(qt.norm) || info.core === qt.core)) {
                 return `<mark>${rw}</mark>`;
               }
               return rw;
@@ -958,22 +1084,20 @@
             return;
           }
 
-          // فحص التطابق بالجذر الصرفي (مثال: "سرقة" تطابق "والسارق والسارقة" و"يسرقن" و"سرق")
-          let matchedWordsCount = 0;
+          // مطابقة المشتقات الحقيقية للكلمة فقط (مثل سرقة -> السارق، السارقة، سرق، يسرقن، سارقين)
+          let matchCount = 0;
           const highlightedWords = rawWords.map(rw => {
-            const rwInfo = getArabicStemAndRoot(rw);
-            const isMatch = qTokens.some(qt =>
-              (qt.root.length >= 3 && (rwInfo.root === qt.root || rwInfo.stem === qt.stem || rwInfo.norm.includes(qt.stem)))
-            );
-            if (isMatch) {
-              matchedWordsCount++;
+            const info = extractStrictArabicCore(rw);
+            const matched = qTokens.some(qt => qt.core.length >= 3 && info.core === qt.core);
+            if (matched) {
+              matchCount++;
               return `<mark>${rw}</mark>`;
             }
             return rw;
           });
 
-          if (matchedWordsCount > 0) {
-            rootResults.push({
+          if (matchCount > 0) {
+            derivativeResults.push({
               type: "quran", surahId: s.id, ayahId: v.id,
               title: `سورة ${s.name} • آية ${v.id}`,
               snippet: highlightedWords.join(" ")
@@ -982,55 +1106,54 @@
         });
       });
 
-      // 2. البحث في الكتب والدروس الصوتية (بكل اللغات)
+      // 2. البحث في الكتب والمؤلفات
       let bookHits = [];
       apiBooks.forEach(b => {
-        const bNameNorm = normalizeArabic(b.name || "");
-        const bTitleNorm = normalizeArabic(b.title || "");
-        const rawLower = rawQuery.toLowerCase();
-        if (
-          bNameNorm.includes(qNorm) || bTitleNorm.includes(qNorm) ||
-          (b.name && b.name.toLowerCase().includes(rawLower)) ||
-          (b.title && b.title.toLowerCase().includes(rawLower))
-        ) {
-          bookHits.push({
-            type: b.is_audio ? "audio" : "book", id: b.id, url: b.url,
-            title: `${b.is_audio ? '🎧 درس صوتي:' : '📗 كتاب:'} ${b.name || b.title}`,
-            snippet: (b.category && b.category.name) || ""
-          });
+        if (!b.is_audio) {
+          const bNameNorm = normalizeArabic(b.name || "");
+          if (bNameNorm.includes(qNorm) || (b.name && b.name.toLowerCase().includes(rawQuery.toLowerCase()))) {
+            bookHits.push({
+              type: "book", id: b.id,
+              title: `📗 كتاب: ${b.name}`,
+              snippet: (b.category && b.category.name) || ""
+            });
+          }
         }
       });
 
-      // البحث داخل نصوص الكتب المحفوظة محلياً
-      legacyBooks.forEach((lb, idx) => {
-        const tNorm = normalizeArabic(lb.title || "");
-        const cNorm = normalizeArabic(lb.content || "");
-        if (tNorm.includes(qNorm) || cNorm.includes(qNorm)) {
-          bookHits.push({
-            type: "book", id: 9000 + idx,
-            title: `📗 ${lb.title}`,
-            snippet: (lb.content || "").slice(0, 140) + "..."
-          });
-        }
-      });
-
-      const allResults = [...exactResults, ...rootResults, ...bookHits];
+      // دمج النتائج مع تحديد سقف مريح (أقوى 20 نتيجة فقط لمنع الإزعاج)
+      const allResults = [...exactResults, ...derivativeResults, ...bookHits].slice(0, 20);
 
       if (!allResults.length) {
-        box.innerHTML = `<div style="padding:12px;">لا توجد نتائج مطابقة لـ "<strong>${rawQuery}</strong>". جرب البحث بكلمة أقصر أو مفردة.</div>`;
-        return;
+        box.innerHTML = `<div style="padding:12px;">لا توجد آيات مطابقة لفظياً لـ "<strong>${rawQuery}</strong>". انظر إجابة الذكاء الاصطناعي في الأعلى للاستفادة الدلالية.</div>`;
+      } else {
+        box.innerHTML = `
+          <div style="font-size:12.5px;color:var(--primary);font-weight:700;margin-bottom:8px;">
+            🎯 الآيات والمواضع الدقيقة المرتبطة بـ «${rawQuery}» (${allResults.length} نتيجة):
+          </div>
+        ` + allResults.map((r, idx) => `
+          <div class="search-item" onclick='onSearchResultClick(${JSON.stringify(r).replace(/'/g, "&#39;")})'>
+            <div><span class="search-num">${idx + 1}</span> <strong>${r.title}</strong></div>
+            <div style="font-size:15.5px;font-family:var(--font-reading);margin-top:4px;line-height:1.95;">${r.snippet}</div>
+          </div>
+        `).join("");
       }
 
-      box.innerHTML = `
-        <div style="font-size:12.5px;color:var(--primary);font-weight:700;margin-bottom:8px;">
-          ✅ تم العثور على (${allResults.length}) نتيجة قرآنية ومكتبية (مرتبة حسب الدقة والجذر اللغوي):
-        </div>
-      ` + allResults.slice(0, 60).map((r, idx) => `
-        <div class="search-item" onclick='onSearchResultClick(${JSON.stringify(r).replace(/'/g, "&#39;")})'>
-          <div><span class="search-num">${idx + 1}</span> <strong>${r.title}</strong></div>
-          <div style="font-size:15px;font-family:var(--font-reading);margin-top:4px;line-height:1.9;">${r.snippet}</div>
-        </div>
-      `).join("");
+      // 3. تشغيل مساعد الذكاء الاصطناعي لشرح المفهوم القرآني وإعطاء الآيات الدلالية
+      aiBox.classList.add("show");
+      aiBox.innerHTML = `🤖 <strong>الباحث القرآني الذكي:</strong> جاري تحليل «${rawQuery}» في القرآن الكريم...`;
+      try {
+        const prompt = `أنت باحث قرآني متخصص في تطبيق روح القرآن ونعيمه. المستخدم يبحث عن: "${rawQuery}". اكتب خلاصة مركزة ومفيدة في 3 أسطر فقط تذكر فيها أهم الآيات القرآنية التي تتحدث عن هذا الموضوع ومعناها الإجمالي بدون إطالة.`;
+        const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+        if (res.ok) {
+          const aiText = await res.text();
+          aiBox.innerHTML = `🤖 <strong>خلاصة الذكاء الاصطناعي حول «${rawQuery}»:</strong><br>${aiText.replace(/\n/g, "<br>")}`;
+        } else {
+          aiBox.classList.remove("show");
+        }
+      } catch (e) {
+        aiBox.classList.remove("show");
+      }
     }
 
     function onSearchResultClick(r) {
@@ -1050,67 +1173,89 @@
       } else if (r.type === "book") {
         switchTab("books");
         openBookItem(r.id);
-      } else if (r.type === "audio") {
-        switchTab("audio");
-        playAudioTrack(r.url, r.title);
       }
     }
 
-    // ================== 2. مشغل الصوتيات المدمج داخل التطبيق حصراً (بدون فتح كروم نهائياً) ==================
-    function playAudioTrack(url, title, resumeTime = 0) {
-      if (!url || url === "0") {
-        showToast("هذا الملف غير مرفوع على السيرفر العام حالياً");
-        return;
-      }
-      const bar = document.getElementById("audioPlayerBar");
-      const audioEl = document.getElementById("mainAudioEl");
-      const statusBadge = document.getElementById("audioStatusBadge");
+    // ================== 3. حفظ ومشاركة بطاقة الصورة داخل تيليجرام وأندرويد ==================
+    function shareAsImageCard() {
+      if (!selectedAyahs.length) return;
+      const surah = quranData.find(s => s.id === currentSurah);
+      const sorted = [...selectedAyahs].sort((a, b) => a - b);
+      const versesText = sorted.map(id => {
+        const v = surah.verses.find(x => x.id === id);
+        return `${v.text} ﴿${id}﴾`;
+      }).join(" ");
 
-      document.getElementById("nowPlayingTitle").textContent = "🎧 " + title;
-      statusBadge.textContent = "⏳ جاري التحميل داخل التطبيق...";
-      bar.style.display = "block";
+      const canvas = document.createElement("canvas");
+      canvas.width = 1080; canvas.height = 1080;
+      const ctx = canvas.getContext("2d");
 
-      // بناء قائمة روابط بديلة مشفرة (HTTPS) لتشغيل ملفات http://alamin-library.com داخل التطبيق دون الخروج لكروم
-      let candidates = [];
-      if (url.startsWith("http://")) {
-        const httpsDirect = url.replace("http://alamin-library.com", "https://alamin-library.com");
-        const httpsNew = url.replace("http://alamin-library.com", "https://new.alamin-library.com");
-        const proxy1 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-        const proxy2 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
-        candidates = [proxy1, proxy2, url, httpsDirect, httpsNew];
-      } else {
-        candidates = [url, `https://corsproxy.io/?${encodeURIComponent(url)}`];
-      }
+      ctx.fillStyle = "#0F291E";
+      ctx.fillRect(0, 0, 1080, 1080);
+      ctx.strokeStyle = "#D4AF37";
+      ctx.lineWidth = 8;
+      ctx.strokeRect(40, 40, 1000, 1000);
 
-      let tryIdx = 0;
-      function tryNextSource() {
-        if (tryIdx >= candidates.length) {
-          statusBadge.textContent = "⚠️ السيرفر الصوتي الأصلي لا يستجيب حالياً";
-          showToast("السيرفر الأصلي للدرس متوقف مؤقتاً؛ جرب تلاوات السور الكاملة ريثما نربط أرشيف تيليجرام");
-          return;
-        }
-        const currentCandidate = candidates[tryIdx++];
-        audioEl.src = currentCandidate;
-        if (resumeTime > 0) audioEl.currentTime = resumeTime;
-        const p = audioEl.play();
-        if (p !== undefined) {
-          p.then(() => {
-            statusBadge.textContent = "▶ يعمل الآن داخل التطبيق";
-          }).catch(() => {
-            tryNextSource();
-          });
+      ctx.fillStyle = "#F3E38E";
+      ctx.font = "bold 44px 'Noto Naskh Arabic', serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`سورة ${surah.name}`, 540, 130);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "38px 'Noto Naskh Arabic', serif";
+      const words = versesText.split(" ");
+      let line = "", y = 250;
+      for (let w of words) {
+        const test = line + w + " ";
+        if (ctx.measureText(test).width > 880) {
+          ctx.fillText(line, 540, y);
+          line = w + " ";
+          y += 70;
+          if (y > 900) break;
+        } else {
+          line = test;
         }
       }
+      ctx.fillText(line, 540, y);
 
-      audioEl.onerror = () => tryNextSource();
-      tryNextSource();
+      ctx.fillStyle = "#A7F3D0";
+      ctx.font = "bold 26px 'Readex Pro', sans-serif";
+      ctx.fillText("تطبيق روح القرآن ونعيمه • @Rohalquraan_app_Bot", 540, 995);
 
-      audioEl.ontimeupdate = () => {
-        saveProgress("audio", { url, title, time: Math.floor(audioEl.currentTime) });
-      };
+      const dataUrl = canvas.toDataURL("image/png");
+      document.getElementById("generatedCardPreview").src = dataUrl;
+      canvas.toBlob(blob => { lastGeneratedBlob = blob; }, "image/png");
+      document.getElementById("imageCardModalBackdrop").classList.add("show");
     }
 
-    // ================== 3. بقية دوال التطبيق (الخط، اللغات، المصحف، الكتب) ==================
+    function closeImageCardModal() {
+      document.getElementById("imageCardModalBackdrop").classList.remove("show");
+    }
+
+    async function shareOrSaveGeneratedCard() {
+      if (lastGeneratedBlob && navigator.canShare) {
+        const file = new File([lastGeneratedBlob], `roh-alquran-${currentSurah}.png`, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: "بطاقة آية من تطبيق روح القرآن ونعيمه",
+              files: [file]
+            });
+            return;
+          } catch (e) {}
+        }
+      }
+      // بديل مباشر إذا لم يدعم الجهاز مشاركة الملفات
+      const a = document.createElement("a");
+      a.href = document.getElementById("generatedCardPreview").src;
+      a.download = `roh-alquran-${currentSurah}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("اضغط مطولاً على الصورة في النافذة واختر «حفظ الصورة»");
+    }
+
+    // ================== 4. بقية وظائف التطبيق ==================
     function openFontModal() { document.getElementById("fontModalBackdrop").classList.add("show"); }
     function closeFontModal() { document.getElementById("fontModalBackdrop").classList.remove("show"); }
 
@@ -1208,6 +1353,7 @@
     }
 
     function loadSurah(surahId, resetScroll = true) {
+      stopAyahRecitation();
       currentSurah = parseInt(surahId, 10);
       localStorage.setItem("roh_surah", currentSurah);
       clearAyahSelection();
@@ -1269,11 +1415,13 @@
           minA === maxA ? `سورة ${surah.name} • الآية ${minA}` : `سورة ${surah.name} • الآيات (${minA} إلى ${maxA})`;
         saveProgress("quran", { surahId: currentSurah, surahName: surah.name, ayahId: minA });
       } else {
+        stopAyahRecitation();
         bar.classList.remove("show");
       }
     }
 
     function clearAyahSelection() {
+      stopAyahRecitation();
       selectedAyahs = [];
       updateAyahSelectionUI();
     }
@@ -1313,7 +1461,7 @@
       }
 
       if (!explanation) {
-        explanation = `تأويل سورة ${surah.name} (الآية ${ayahId}) ضمن سلسلة «تأويل القرآن العظيم» للعلّامة الإنساني محمد أمين شيخو قدس سره.\n\n(جاري ربط قاعدة بيانات التأويل التفصيلية alamin748965.db من حزمة التطبيق).`;
+        explanation = `تأويل سورة ${surah.name} (الآية ${ayahId}) ضمن سلسلة «تأويل القرآن العظيم» للعلّامة الإنساني محمد أمين شيخو قدس سره.\n\nللحصول على مجلدات التأويل الكاملة بصيغة PDF، يمكنك مراسلة البوت (@Rohalquraan_app_Bot).`;
       }
 
       document.getElementById("tafsirExplanationText").innerHTML = explanation.replace(/\n/g, "<br>");
@@ -1328,9 +1476,9 @@
     function copyTafsirContent() {
       const v = document.getElementById("tafsirVerseBox").textContent;
       const t = document.getElementById("tafsirExplanationText").innerText;
-      const full = `${v}\n\n📖 التأويل:\n${t}\n\n— المصدر: مؤلفات العلامة الإنساني محمد أمين شيخو قدس سره • تطبيق روح القرآن ونعيمه (@Rohalquraan_app_Bot)`;
+      const full = `${v}\n\n📖 التأويل:\n${t}\n\n— تطبيق روح القرآن ونعيمه (@Rohalquraan_app_Bot)`;
       navigator.clipboard.writeText(full);
-      showToast("تم نسخ التأويل مع التوثيق الكامل");
+      showToast("تم نسخ التأويل");
     }
 
     function openStaticPage(type) {
@@ -1381,7 +1529,7 @@
       const catIds = new Set(textCats.map(c => Number(c.id)));
       let filtered = apiBooks.filter(b => !b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
 
-      if ( legacyBooks.length > 0 && bookLang === "ar" && !selectedCatId ) {
+      if (legacyBooks.length > 0 && bookLang === "ar" && !selectedCatId) {
         const extra = legacyBooks.map((lb, i) => ({
           id: 9000 + i,
           name: lb.title || `كتاب ${i + 1}`,
@@ -1453,11 +1601,10 @@
               القسم: ${(book.category && book.category.name) || "المؤلفات العلمية"}
             </p>
             <div style="background:var(--primary-light);padding:16px;border-radius:14px;text-align:center;margin-top:14px;line-height:1.9;">
-              📖 نص هذا الكتاب مخزن داخل قاعدة البيانات المحلية (<code>alamin748965.db</code>) أو متاح بصيغة <strong>PDF</strong> عبر البوت.<br>
-              اضغط الزر أدناه لاستلام نسخة PDF الكاملة فوراً:
+              📖 يمكنك قراءة وتحميل النسخة الكاملة من كتاب (<strong>${book.name}</strong>) بصيغة <strong>PDF</strong> سريعة التحميل مباشرة عبر بوت تيليجرام الخاص بالتطبيق:
             </div>
             <a href="https://t.me/Rohalquraan_app_Bot" target="_blank" class="bot-cta-btn" style="margin-top:16px;font-size:15px;padding:12px 22px;">
-              📥 استلام الكتاب PDF عبر البوت (@Rohalquraan_app_Bot)
+              📥 فتح وتحميل الكتاب PDF عبر البوت
             </a>
           </div>
         `;
@@ -1544,7 +1691,11 @@
       const catIds = new Set(audioCats.map(c => Number(c.id)));
       const tracks = apiBooks.filter(b => b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
 
-      container.innerHTML = tracks.slice(0, 100).map(t => `
+      container.innerHTML = `
+        <div style="background:var(--primary-light);padding:12px;border-radius:12px;font-size:13px;margin-bottom:6px;">
+          💡 ملاحظة: الدروس الصوتية التي توقف سيرفرها القديم يمكنك طلبها واستماعها مباشرة عبر بوت تيليجرام (@Rohalquraan_app_Bot).
+        </div>
+      ` + tracks.slice(0, 100).map(t => `
         <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
           <div>
             <div style="font-weight:600;font-size:14.5px;">${t.title || t.name}</div>
@@ -1555,22 +1706,57 @@
       `).join("");
     }
 
+    function playAudioTrack(url, title, resumeTime = 0) {
+      if (!url || url === "0") {
+        showToast("هذا الملف متاح عبر أرشيف البوت (@Rohalquraan_app_Bot)");
+        return;
+      }
+      const bar = document.getElementById("audioPlayerBar");
+      const audioEl = document.getElementById("mainAudioEl");
+      const statusBadge = document.getElementById("audioStatusBadge");
+
+      document.getElementById("nowPlayingTitle").textContent = "🎧 " + title;
+      statusBadge.textContent = "⏳ جاري الاتصال...";
+      bar.style.display = "block";
+
+      let candidates = [];
+      if (url.startsWith("http://")) {
+        const proxy1 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const proxy2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        candidates = [proxy1, proxy2, url];
+      } else {
+        candidates = [url];
+      }
+
+      let tryIdx = 0;
+      function tryNextSource() {
+        if (tryIdx >= candidates.length) {
+          statusBadge.textContent = "⚠️ متاح عبر البوت";
+          showToast("السيرفر الأصلي لهذا الدرس غير متاح حالياً، يمكنك سماعه عبر البوت أو تشغيل تلاوات السور الكاملة");
+          return;
+        }
+        audioEl.src = candidates[tryIdx++];
+        if (resumeTime > 0) audioEl.currentTime = resumeTime;
+        const p = audioEl.play();
+        if (p !== undefined) {
+          p.then(() => {
+            statusBadge.textContent = "▶ يعمل الآن";
+          }).catch(() => tryNextSource());
+        }
+      }
+
+      audioEl.onerror = () => tryNextSource();
+      tryNextSource();
+
+      audioEl.ontimeupdate = () => {
+        saveProgress("audio", { url, title, time: Math.floor(audioEl.currentTime) });
+      };
+    }
+
     function changeReciter(rec) {
       currentReciter = rec;
       localStorage.setItem("roh_reciter", rec);
       showToast("تم تغيير القارئ");
-    }
-
-    function playSelectedAyahsAudio() {
-      if (!selectedAyahs.length) return;
-      const ayahId = Math.min(...selectedAyahs);
-      const sPad = String(currentSurah).padStart(3, "0");
-      const aPad = String(ayahId).padStart(3, "0");
-      const url = `https://everyayah.com/data/${currentReciter}/${sPad}${aPad}.mp3`;
-      const surah = quranData.find(s => s.id === currentSurah);
-      showToast(`جاري تلاوة سورة ${surah ? surah.name : ''} • آية ${ayahId}`);
-      const audio = new Audio(url);
-      audio.play().catch(() => showToast("تأكد من الاتصال بالإنترنت لتشغيل التلاوة"));
     }
 
     function saveProgress(type, data) {
@@ -1737,74 +1923,28 @@
     function copySelectedAyahs() {
       if (!selectedAyahs.length) return;
       const surah = quranData.find(s => s.id === currentSurah);
-      const versesText = selectedAyahs.map(id => {
+      const sorted = [...selectedAyahs].sort((a, b) => a - b);
+      const versesText = sorted.map(id => {
         const v = surah.verses.find(x => x.id === id);
         return `${v.text} (${id})`;
       }).join(" ");
-      const minA = Math.min(...selectedAyahs);
-      const maxA = Math.max(...selectedAyahs);
+      const minA = sorted[0];
+      const maxA = sorted[sorted.length - 1];
       const ref = minA === maxA ? `${surah.name}: ${minA}` : `${surah.name}: ${minA}-${maxA}`;
       const full = `﴿${versesText}﴾ [${ref}]\n\n— تطبيق روح القرآن ونعيمه (@Rohalquraan_app_Bot)`;
       navigator.clipboard.writeText(full);
-      showToast("تم نسخ الآيات المتتالية مع التوثيق");
-    }
-
-    function shareAsImageCard() {
-      if (!selectedAyahs.length) return;
-      const surah = quranData.find(s => s.id === currentSurah);
-      const versesText = selectedAyahs.map(id => {
-        const v = surah.verses.find(x => x.id === id);
-        return `${v.text} ﴿${id}﴾`;
-      }).join(" ");
-
-      const canvas = document.createElement("canvas");
-      canvas.width = 1080; canvas.height = 1080;
-      const ctx = canvas.getContext("2d");
-
-      ctx.fillStyle = "#0F291E";
-      ctx.fillRect(0, 0, 1080, 1080);
-      ctx.strokeStyle = "#D4AF37";
-      ctx.lineWidth = 8;
-      ctx.strokeRect(40, 40, 1000, 1000);
-
-      ctx.fillStyle = "#F3E38E";
-      ctx.font = "bold 42px 'Noto Naskh Arabic', serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`سورة ${surah.name}`, 540, 130);
-
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "38px 'Noto Naskh Arabic', serif";
-      const words = versesText.split(" ");
-      let line = "", y = 260;
-      for (let w of words) {
-        const test = line + w + " ";
-        if (ctx.measureText(test).width > 880) {
-          ctx.fillText(line, 540, y);
-          line = w + " ";
-          y += 68;
-          if (y > 900) break;
-        } else {
-          line = test;
-        }
-      }
-      ctx.fillText(line, 540, y);
-
-      ctx.fillStyle = "#A7F3D0";
-      ctx.font = "bold 26px 'Readex Pro', sans-serif";
-      ctx.fillText("تطبيق روح القرآن ونعيمه • @Rohalquraan_app_Bot", 540, 995);
-
-      const link = document.createElement("a");
-      link.download = `roh-alquran-${currentSurah}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      showToast("تم نسخ الآيات");
     }
 
     function renderQuiz() {
-      const item = QUIZ_BANK[currentQuizIdx % QUIZ_BANK.length];
+      if (!QUIZ_BANK.length) return;
+      const idx = currentQuizIdx % QUIZ_BANK.length;
+      const item = QUIZ_BANK[idx];
+      document.getElementById("quizCounterBadge").textContent = `سؤال ${idx + 1} من ${QUIZ_BANK.length}`;
       document.getElementById("quizQuestionText").textContent = item.q;
       document.getElementById("quizAnswerReveal").style.display = "none";
-      document.getElementById("quizOptionsBox").innerHTML = item.options.map((opt, idx) => `
-        <button class="tb-btn" style="text-align:start;padding:12px;" onclick="checkQuizOption(${idx})">${opt}</button>
+      document.getElementById("quizOptionsBox").innerHTML = item.options.map((opt, i) => `
+        <button class="tb-btn" style="text-align:start;padding:12px;" onclick="checkQuizOption(${i})">${opt}</button>
       `).join("");
     }
 
@@ -1844,16 +1984,15 @@
       document.getElementById("readerModalTitle").textContent = "🎓 الجولة التعريفية السريعة";
       document.getElementById("readerModalBody").innerHTML = `
         <h3>أهلاً بك في تطبيق «روح القرآن ونعيمه»</h3>
-        <p><strong>1️⃣ البحث القرآني الجذري الذكي (🔍):</strong> جرب البحث بأي كلمة مثل «سرقة» أو «رحمة» وسيقوم المحرك باستخراج جميع الآيات والمشتقات اللغوية وتلوينها بالأصفر.</p>
-        <p><strong>2️⃣ تصفح المصحف والتأويل:</strong> اضغط على أي آية لتحديدها ثم اضغط «📖 التأويل» لقراءة شرحها أو «🔊 استماع» لسماع تجويدها.</p>
-        <p><strong>3️⃣ تخصيص الخط والخلفية (Aa):</strong> من زر (Aa) في أعلى الشاشة يمكنك التبديل بين 3 خطوط مريحة للعين وتكبير الخط واختيار الخلفية.</p>
-        <p><strong>4️⃣ الصوتيات الداخلية:</strong> جميع التلاوات والدروس تشتغل داخل مشغل التطبيق مباشرة دون الخروج للمتصفح.</p>
+        <p><strong>1️⃣ البحث بالذكاء الاصطناعي (🔍):</strong> ابحث بأي كلمة أو مفهوم (مثل: سرقة، الصبر، الزكاة) وسيقدم لك الذكاء الاصطناعي خلاصة مركزة مع الآيات الدقيقة المرتبطة بها فقط.</p>
+        <p><strong>2️⃣ التلاوة المتصلة للآيات:</strong> حدد أي مجموعة آيات متتالية واضغط «🔊 استماع» ليقرأها الشيخ آيةً تلو الأخرى دون انقطاع.</p>
+        <p><strong>3️⃣ حفظ بطاقة الآية (🖼️ بطاقة):</strong> يصمم لك بطاقة عالية الدقة مع نافذة معاينة وحفظ مباشر في الاستوديو.</p>
       `;
       document.getElementById("readerModal").classList.add("show");
     }
 
     function shareAppLink() {
-      const text = "تطبيق روح القرآن ونعيمه • المصحف الشريف وتأويله ومؤلفات العلامة محمد أمين شيخو باللغات العربية والفرنسية والإنجليزية: https://t.me/Rohalquraan_app_Bot";
+      const text = "تطبيق روح القرآن ونعيمه • المصحف الشريف وتأويله ومؤلفات العلامة محمد أمين شيخو: https://t.me/Rohalquraan_app_Bot";
       if (navigator.share) navigator.share({ title: "روح القرآن ونعيمه", text, url: "https://t.me/Rohalquraan_app_Bot" });
       else { navigator.clipboard.writeText(text); showToast("تم نسخ رابط مشاركة التطبيق"); }
     }
