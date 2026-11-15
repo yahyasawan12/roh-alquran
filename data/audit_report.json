@@ -1,22 +1,26 @@
 {
-  "total_books_target": 95,
-  "books_completed_count": 5,
-  "books_missing_count": 90,
-  "total_audios_target": 528,
-  "audios_completed_count": 0,
-  "audios_missing_count": 528,
-  "missing_books_list": [
+  "books_completed": 15,
+  "books_total": 95,
+  "audios_completed": 15,
+  "audios_total": 528,
+  "unmatched_files": [
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-8.pdf ",
+    "The-effective-medication&Circumcision.epub (The Effective Medication)",
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-6.pdf ",
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-7.pdf ",
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-3.epub (Stories of the Scholar Mohammad Amin Sheikho-Part 3)",
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-3.pdf ",
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-4.pdf ",
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-4.epub (Stories of the Scholar Mohammad Amin Sheikho-Part 4)",
+    "Stories-of-the-Scholar-Mohammad-Amin-Sheikho-part-5.pdf ",
+    "Islamic-Education-for-Youths-3.pdf "
+  ],
+  "missing_books": [
     {
       "id": 666,
       "name": "زيارة الرسول ﷺ",
       "lang": "ar",
       "category": "الأنبياء الكرام"
-    },
-    {
-      "id": 667,
-      "name": "Zakat \"Alms giving\"",
-      "lang": "en",
-      "category": "Pillars of Islam"
     },
     {
       "id": 668,
@@ -145,12 +149,6 @@
       "category": "Islamic Studies"
     },
     {
-      "id": 762,
-      "name": "The Origin of Creation",
-      "lang": "en",
-      "category": "Islamic Studies"
-    },
-    {
       "id": 763,
       "name": "Les sept cieux et l’impressionnante réalité des six jours de la création",
       "lang": "fr",
@@ -195,12 +193,6 @@
     {
       "id": 784,
       "name": "L'aumône (Al-Zakat)",
-      "lang": "fr",
-      "category": "Les piliers de l'Islam"
-    },
-    {
-      "id": 785,
-      "name": "Le pèlerinage (Al-Hajj)",
       "lang": "fr",
       "category": "Les piliers de l'Islam"
     },
@@ -337,46 +329,16 @@
       "category": "Educational Programs"
     },
     {
-      "id": 811,
-      "name": "Pilgrimage \"Hajj\"",
-      "lang": "en",
-      "category": "Pillars of Islam"
-    },
-    {
-      "id": 812,
-      "name": "Islamic Education for Youths-Level Two",
-      "lang": "en",
-      "category": "Educational Programs"
-    },
-    {
-      "id": 813,
-      "name": "Islamic Education for Youths-Level Three",
-      "lang": "en",
-      "category": "Educational Programs"
-    },
-    {
       "id": 814,
       "name": "Interprétation de la Sourate Al-Imrân",
       "lang": "fr",
       "category": "Interprétation du Saint Coran"
     },
     {
-      "id": 815,
-      "name": "The Envoy of Peace Looms on the Horizon",
-      "lang": "en",
-      "category": "Islamic Studies"
-    },
-    {
       "id": 816,
       "name": "Education islamique de la jeunesse. «Niveau 1»",
       "lang": "fr",
       "category": "Programmes Pédagogique"
-    },
-    {
-      "id": 817,
-      "name": "The Sources of Spring Water in the World",
-      "lang": "en",
-      "category": "Scientific Studies"
     },
     {
       "id": 819,
@@ -393,12 +355,6 @@
     {
       "id": 821,
       "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Two",
-      "lang": "en",
-      "category": "Stories of the Scholar Mohammad Amin Sheikho"
-    },
-    {
-      "id": 822,
-      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Three",
       "lang": "en",
       "category": "Stories of the Scholar Mohammad Amin Sheikho"
     },
@@ -437,12 +393,6 @@
       "name": "Facts of Psychology ‎and Sociology",
       "lang": "en",
       "category": "Educational Programs"
-    },
-    {
-      "id": 829,
-      "name": "Unveiling The Secrets of Magic and Magicians",
-      "lang": "en",
-      "category": "Islamic Studies"
     },
     {
       "id": 830,
@@ -546,25 +496,5 @@
       "lang": "ar",
       "category": "تأويل القرآن العظيم"
     }
-  ],
-  "missing_audios_by_category": {
-    "تأويل جزء عم (#قسم 102)": 39,
-    "حقيقة سيدنا محمد ﷺ (#قسم 103)": 14,
-    "السيد المسيح عليه السلام يلوح بالأفق (#قسم 104)": 29,
-    "درر الأحكام (#قسم 141)": 19,
-    "الحجامة (#قسم 112)": 11,
-    "عصمة الأنبياء (#قسم 114)": 26,
-    "أسرار السبع المثاني وحقائقها (#قسم 115)": 19,
-    "Islam!… What are the Veil, Divorce, and Polygamy for? (#قسم 130)": 26,
-    "Pilgrimage (Hajj) (#قسم 142)": 27,
-    "The Sources of Spring Water in the World (#قسم 143)": 19,
-    "تأويل القرآن العظيم - المجلد الأول (#قسم 156)": 42,
-    "تأويل القرآن العظيم - المجلد الثاني (#قسم 157)": 39,
-    "تأويل القرآن العظيم - المجلد الثالث (#قسم 158)": 33,
-    "تأويل القرآن العظيم - المجلد الرابع (#قسم 159)": 45,
-    "تأويل القرآن العظيم - المجلد الخامس (#قسم 160)": 81,
-    "تأويل الأمين (#قسم 161)": 44,
-    "زيارة الرسول ﷺ (#قسم 162)": 13,
-    "الله أكبر - رفقاً بالحيوان (#قسم 163)": 2
-  }
+  ]
 }

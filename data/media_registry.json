@@ -1,5 +1,5 @@
 {
-  "last_update_id": 104067811,
+  "last_update_id": 104067841,
   "active_cat_id": null,
   "file_hashes": {
     "959ae8422f154a73af1585c9e79ce9ddcd5d64758f9a9f0b2c9a1039dd8f09fe": "778",
@@ -11,7 +11,27 @@
     "b18d69be1e867c92e5d5938a82eafb46bb6ce945b7c8ed02cb8c96e415497040": "801",
     "7f9184d288eb2561588aab872db3b30b15d4c9867d0a42cc59b918c385b1b5aa": "802",
     "c47802cf0db591b9740c52a2f1ef051a1dc5381a124beb5570378492114e39aa": "802",
-    "9de9a64dcb9db5e6c39f1a30aa57bd6627ae71ff7a3922c635f64121d6c29d53": "778"
+    "9de9a64dcb9db5e6c39f1a30aa57bd6627ae71ff7a3922c635f64121d6c29d53": "778",
+    "c2184b381f8f28e12470c9bc0a3c8c978232da20e04cc4a4571699e2a080e94e": "815",
+    "a02c0fa7a8558ff445ae1fe3fa30106fcee0542a72058ea0facb52919b81bc72": "815",
+    "365ef0bf4d9e5ded6ef6bb923d771890e5c05652a826c91fc463f3c2aebd56c9": "829",
+    "f98e9e1e01ed98bc9b68bb675fc7c22e5576711e0b13854ffba8b7468c7bb504": "829",
+    "b32209a39234188e97b5643dcbe92597e232910620565677f04478570042e3c2": "667",
+    "76c2ccb3352c9bbbd7b5ee5e05425b7575f035a0780626c2f27a88d42c6aecd7": "667",
+    "220d427e45c1622c5dadcdf7c21daea3971a610c0d543dc91cac2ecab98b02f2": "762",
+    "d31ebbb16d95cdc9152bae41796c3e7cb07c1697f4cfd3f159575063478a777c": "762",
+    "ab24ec95468bf2335b78f731afa5700f8fd9d67d021d20f22a6cb29cd05e656f": "817",
+    "c6cb664305bd39eaa7c2f3c86acb1ad5d728f37b3f7c2eccd8bf5cf49619a6af": "817",
+    "d399a37028193f918de217b0acc7a535a68a452828c306d1ef6d1b2ac593c2a1": "822",
+    "0cb075b7be4c3948cf485ab43037da2bac35f6e3104c8ab2bb6e540b9c17a1d8": "822",
+    "1b48e65dfa038e361ee5b0df0ade2d9eed3291bd26d7af1fa90cdcfa8ac9d36c": "822",
+    "d338c3855db6e2b4c07b2ad42983a5d3f391ac71ae41679b4517af6a3d71665c": "822",
+    "8f7bc84cac78704fc77849887a8fedca212dd605eea1439b5e4f7e350afa051b": "811",
+    "e6af19b5ca69db71c0069d97aaed4a4c60214e32be6a110910b27f0fe7458da8": "785",
+    "983f1dd45423dc2246d46d7795a44e7eb0c5fb0d9cddac176168a38f7cd0fa69": "822",
+    "001869fbdb1636b80442e9c40780663a5bdc725c4427897d4894ee3d299d4ac4": "822",
+    "a59f8ff773480fb3d0f1b299ff57ae05dabf91644068864fcf335146b23e4905": "813",
+    "fa1f45222d66b3c3085f26a7daa297bf679efbd64092fc0bf96218718cb933d8": "812"
   },
   "tg_unique_ids": {
     "AgADwR0AAm2x0VM": "778",
@@ -23,7 +43,27 @@
     "AgAD0h0AAm2x0VM": "801",
     "AgAD0x0AAm2x0VM": "802",
     "AgAD1R0AAm2x0VM": "802",
-    "AgAD3h0AAm2x0VM": "778"
+    "AgAD3h0AAm2x0VM": "778",
+    "AgADFCAAAoec0VM": "815",
+    "AgADFSAAAoec0VM": "815",
+    "AgADFiAAAoec0VM": "829",
+    "AgADFyAAAoec0VM": "829",
+    "AgADGCAAAoec0VM": "667",
+    "AgADGSAAAoec0VM": "667",
+    "AgADGiAAAoec0VM": "762",
+    "AgADGyAAAoec0VM": "762",
+    "AgADHCAAAoec0VM": "817",
+    "AgADHSAAAoec0VM": "817",
+    "AgADHyAAAoec0VM": "822",
+    "AgADISAAAoec0VM": "822",
+    "AgADIyAAAoec0VM": "822",
+    "AgADKSAAAoec0VM": "822",
+    "AgADKyAAAoec0VM": "811",
+    "AgADLCAAAoec0VM": "785",
+    "AgADLSAAAoec0VM": "822",
+    "AgADLiAAAoec0VM": "822",
+    "AgADLyAAAoec0VM": "813",
+    "AgADMSAAAoec0VM": "812"
   },
   "books_done": {
     "778": {
@@ -65,7 +105,178 @@
       "has_extracted_text": true,
       "local_path": "data/files/books/802.epub",
       "tg_file_id": "BQACAgQAAxkBAAM8avml2bSOlNBdH6FFg_45zzcqMLUAAtUdAAJtsdFTzr9mQ3fmSfw9BA"
+    },
+    "815": {
+      "id": 815,
+      "name": "The Envoy of Peace Looms on the Horizon",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/815.epub",
+      "tg_file_id": "BQACAgQAAxkBAANqavm_1k39CkrgqWNjpTNcxuhfW0wAAhUgAAKHnNFTkxw9vWFCg8Q9BA"
+    },
+    "829": {
+      "id": 829,
+      "name": "Unveiling The Secrets of Magic and Magicians",
+      "format": "pdf",
+      "has_extracted_text": false,
+      "local_path": "data/files/books/829.pdf",
+      "tg_file_id": "BQACAgQAAxkBAANsavm_1sBN3-CGcHDAb9LdeCejHaoAAhcgAAKHnNFTViGieEttqk09BA"
+    },
+    "667": {
+      "id": 667,
+      "name": "Zakat \"Alms giving\"",
+      "format": "pdf",
+      "has_extracted_text": false,
+      "local_path": "data/files/books/667.pdf",
+      "tg_file_id": "BQACAgQAAxkBAANuavm_1iM5A8CzmujY_e_7eP1NRj4AAhkgAAKHnNFTllzR9Ka5DM89BA"
+    },
+    "762": {
+      "id": 762,
+      "name": "The Origin of Creation",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/762.epub",
+      "tg_file_id": "BQACAgQAAxkBAANwavm_1oB9NgwpSIcmVpDhvmKIb0IAAhsgAAKHnNFTjSR_bBCC58U9BA"
+    },
+    "817": {
+      "id": 817,
+      "name": "The Sources of Spring Water in the World",
+      "format": "pdf",
+      "has_extracted_text": false,
+      "local_path": "data/files/books/817.pdf",
+      "tg_file_id": "BQACAgQAAxkBAANyavm_1gy4i3gedVuJYrlMcIo8mWMAAh0gAAKHnNFTS0A57ZhYAAENPQQ"
+    },
+    "822": {
+      "id": 822,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Three",
+      "format": "pdf",
+      "has_extracted_text": false,
+      "local_path": "data/files/books/822.pdf",
+      "tg_file_id": "BQACAgQAAxkBAAOEavnAjq7IOj86ya8IgnA3aiozUgIAAi4gAAKHnNFTJ7BCXfwqOr89BA"
+    },
+    "811": {
+      "id": 811,
+      "name": "Pilgrimage \"Hajj\"",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/811.epub",
+      "tg_file_id": "BQACAgQAAxkBAAOBavnAjsWTL4k-OvpXH1seqT6D5UQAAisgAAKHnNFTfmqggZx-esg9BA"
+    },
+    "785": {
+      "id": 785,
+      "name": "Le pèlerinage (Al-Hajj)",
+      "format": "pdf",
+      "has_extracted_text": false,
+      "local_path": "data/files/books/785.pdf",
+      "tg_file_id": "BQACAgQAAxkBAAOCavnAjrBFeFabqY-DirpIdzU4jpEAAiwgAAKHnNFT_9x-RNM76849BA"
+    },
+    "813": {
+      "id": 813,
+      "name": "Islamic Education for Youths-Level Three",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/813.epub",
+      "tg_file_id": "BQACAgQAAxkBAAOFavnAjn2Nyr5p_QEwOoX8RGv4EpUAAi8gAAKHnNFTIZJIsojQhKM9BA"
+    },
+    "812": {
+      "id": 812,
+      "name": "Islamic Education for Youths-Level Two",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/812.epub",
+      "tg_file_id": "BQACAgQAAxkBAAOHavnAjkbBxlc320kxgDn8mAITe5YAAjEgAAKHnNFThmWxpfYjcEk9BA"
     }
   },
-  "audios_done": {}
+  "audios_done": {
+    "500": {
+      "id": 500,
+      "name": "أنشودة - تأويل جزء عم",
+      "category": "تأويل جزء عم",
+      "local_path": "data/files/audio/500.mp3"
+    },
+    "539": {
+      "id": 539,
+      "name": "أنشودة-عظم المقام",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/539.mp3"
+    },
+    "540": {
+      "id": 540,
+      "name": "عصمة الأنبياء عليهم السلام من الأخطاء",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/540.mp3"
+    },
+    "541": {
+      "id": 541,
+      "name": "ما حقيقة غزوة بدر الكبرى؟",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/541.mp3"
+    },
+    "542": {
+      "id": 542,
+      "name": "قصة تأبير النخل",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/542.mp3"
+    },
+    "543": {
+      "id": 543,
+      "name": "رواية أسرى بدر، ماحقيقتها؟",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/543.mp3"
+    },
+    "544": {
+      "id": 544,
+      "name": "هل النبي ﷺ مسحور؟",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/544.mp3"
+    },
+    "545": {
+      "id": 545,
+      "name": "صلاته ﷺ على المنافقين",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/545.mp3"
+    },
+    "546": {
+      "id": 546,
+      "name": "الإذن للمنافقين بعدم الخروج للغزو في تبوك",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/546.mp3"
+    },
+    "547": {
+      "id": 547,
+      "name": "زواجه ﷺ من السيدة مارية",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/547.mp3"
+    },
+    "548": {
+      "id": 548,
+      "name": "زواجه ﷺ من السيدة زينب",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/548.mp3"
+    },
+    "549": {
+      "id": 549,
+      "name": "قصة (عبس وتولى)",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/549.mp3"
+    },
+    "550": {
+      "id": 550,
+      "name": "هل ولد النبي ﷺ مختونا؟",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/550.mp3"
+    },
+    "551": {
+      "id": 551,
+      "name": "هل حقا لا شعر على إبط الرسول ﷺ",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/551.mp3"
+    },
+    "552": {
+      "id": 552,
+      "name": "ما حقيقة حادثة (شق الصدر)؟",
+      "category": "حقيقة سيدنا محمد ﷺ",
+      "local_path": "data/files/audio/552.mp3"
+    }
+  }
 }
