@@ -112,7 +112,6 @@
     }
     .c-circle.active { border: 3px solid var(--primary); transform: scale(1.08); }
 
-    /* محرك البحث الشامل (شبيه بـ Google بدون ملخص ذكاء اصطناعي) */
     .search-panel {
       background: var(--bg-card); padding: 12px;
       border-bottom: 1px solid var(--border); display: none;
@@ -142,9 +141,8 @@
     }
     mark { background: var(--mark-bg); color: #000; padding: 1px 4px; border-radius: 4px; font-weight: 700; }
 
-    /* شريط متابعة الورد القرآني الرشيق (بدون عجقة) */
     .quran-resume-bar {
-      margin: 10px 12px 4px; padding: 10px 14px; border-radius: 12px;
+      margin: 6px 0 10px; padding: 10px 14px; border-radius: 12px;
       background: linear-gradient(135deg, var(--primary-light), var(--bg-card));
       border: 1px solid var(--primary);
       display: flex; align-items: center; justify-content: space-between;
@@ -272,7 +270,6 @@
       background: var(--bg-card); color: var(--text-main); font-family: inherit; font-weight: 600; cursor: pointer;
     }
 
-    /* بطاقات الكتب الأنيقة مع شارة الرقم المؤقتة وصورة الغلاف */
     .cats-bar {
       display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px;
     }
@@ -305,7 +302,6 @@
     .progress-track { height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 5px; }
     .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
-    /* نافذة قارئ الكتب الفاخرة + تنسيق سؤال وجواب */
     .reader-modal {
       position: fixed; inset: 0; background: var(--bg-main);
       z-index: 250; display: none; flex-direction: column;
@@ -368,7 +364,6 @@
       border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
 
-    /* تنسيق كتاب سؤال وجواب الاحترافي */
     .qa-question {
       background: #FEF3C7; color: #92400E;
       border-right: 5px solid #D97706;
@@ -534,7 +529,7 @@
     </div>
   </div>
 
-  <!-- لوحة البحث الشامل (مثل محرك بحث Google تماماً في القرآن وجميع الكتب بدون ملخص ذكاء اصطناعي) -->
+  <!-- لوحة البحث الشامل (مثل محرك بحث Google تماماً في القرآن وجميع الكتب) -->
   <section class="search-panel" id="searchPanel">
     <div class="search-row">
       <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن أي كلمة أو مشتقاتها في القرآن وجميع الكتب..." onkeydown="if(event.key==='Enter')executeSmartSearch()" />
@@ -551,14 +546,14 @@
     </a>
   </div>
 
-  <!-- التبويب 1: تصفح المصحف الشريف (مع شريط الورد القرآني الرشيق فقط) -->
+  <!-- التبويب 1: تصفح المصحف الشريف -->
   <main class="tab-view active" id="tab-mushaf">
     <div class="quran-resume-bar" onclick="resumeQuran()">
       <strong id="ui-res-quran">📖 متابعة الورد القرآني:</strong>
       <span id="resQuranText">سورة الفاتحة • آية 1 ❮</span>
     </div>
 
-    <div class="mushaf-controls" style="margin-top:8px;">
+    <div class="mushaf-controls">
       <select id="surahSelect" class="select-box" onchange="loadSurah(this.value)"></select>
       <select id="reciterSelect" class="select-box" onchange="changeReciter(this.value)">
         <option value="Husary_128kbps">🎙️ الشيخ محمود خليل الحصري</option>
@@ -579,7 +574,7 @@
   <!-- التبويب 2: الكتب المصنفة حسب اللغة والأقسام -->
   <main class="tab-view" id="tab-books">
     <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-      <h3 id="ui-books-heading" style="color:var(--primary);">📚 المكتبة المقروءة</h3>
+      <h3 id="ui-books-heading" style="color:var(--primary);">📚 المؤلفات والكتب</h3>
       <span id="booksTotalCountBadge" style="font-size:12.5px;font-weight:700;background:var(--primary-light);color:var(--primary);padding:4px 12px;border-radius:12px;"></span>
     </div>
     <div class="cats-bar" id="bookCatsBar"></div>
@@ -634,7 +629,7 @@
     </div>
   </div>
 
-  <!-- نافذة التأويل السفلية (مربوطة بكتب التأويل العربي والفرنسي والإنجليزي) -->
+  <!-- نافذة التأويل السفلية -->
   <div class="tafsir-sheet-backdrop" id="tafsirBackdrop" onclick="if(event.target===this)closeTafsirSheet()">
     <div class="tafsir-sheet">
       <div class="tafsir-head">
@@ -658,7 +653,7 @@
     </div>
   </div>
 
-  <!-- القائمة الجانبية (مع ربط زر اليوتيوب بالقناة الرسمية مباشرة) -->
+  <!-- القائمة الجانبية -->
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleDrawer(false)"></div>
   <aside class="side-drawer" id="sideDrawer">
     <div class="drawer-top">
@@ -850,8 +845,8 @@
       }
     };
 
-    // الترتيب الرسمي للأقسام حسب كل لغة كما حددها المستخدم
-    constORDERED_CATEGORIES = {
+    // الترتيب الرسمي للأقسام حسب كل لغة (تم إصلاح المسافة بعد const)
+    const ORDERED_CATEGORIES = {
       ar: [
         "تأويل القرآن العظيم",
         "أركان الإسلام",
@@ -880,8 +875,9 @@
       ]
     };
 
-    // خريطة الكتب الـ 80 المنسقة فوراً في الواجهة (حتى قبل انتهاء السيرفر)
+    // خريطة الكتب الكاملة (الـ 80 كتاباً السابقة + الـ 13 كتاباً الجديدة من الصور)
     const FRONTEND_CURATED = {
+      // تأويل القرآن العظيم (كامل مع الكتب المضافة في الصور)
       28: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - المجلد الأول", o: 1 },
       29: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - المجلد الثاني", o: 2 },
       30: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - المجلد الثالث", o: 3 },
@@ -889,13 +885,32 @@
       32: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - المجلد الخامس", o: 5 },
       33: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - المجلد السادس", o: 6 },
       34: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - جزء قد سمع", o: 7 },
+      81: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - جزء تبارك", o: 8 },
+      82: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل القرآن العظيم - جزء عمّ", o: 9 },
+      83: { l: "ar", c: "تأويل القرآن العظيم", t: "موسوعة جزء عمّ", o: 10 },
+      84: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل سورة الفيل", o: 11 },
+      85: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل سورة قريش", o: 12 },
+      86: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل سورة الماعون", o: 13 },
+      87: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل سورة الهمزة", o: 14 },
+      88: { l: "ar", c: "تأويل القرآن العظيم", t: "تأويل الأمين للقرآن العظيم", o: 15 },
+      89: { l: "ar", c: "تأويل القرآن العظيم", t: "أسرار السبع المثاني وحقائقها", o: 16 },
+      90: { l: "ar", c: "تأويل القرآن العظيم", t: "موسوعة تأويل القرآن العظيم (جميع المجلدات)", o: 17 },
+
+      // أركان الإسلام
       23: { l: "ar", c: "أركان الإسلام", t: "الإيمان - أول المدارس العليا للتقوى", o: 1 },
       22: { l: "ar", c: "أركان الإسلام", t: "الصلاة - ثاني المدارس العليا للتقوى", o: 2 },
       21: { l: "ar", c: "أركان الإسلام", t: "الزكاة - ثالث المدارس العليا للتقوى", o: 3 },
       19: { l: "ar", c: "أركان الإسلام", t: "الصيام - رابع المدارس العليا للتقوى", o: 4 },
       18: { l: "ar", c: "أركان الإسلام", t: "الحج - خامس المدارس العليا للتقوى", o: 5 },
       25: { l: "ar", c: "أركان الإسلام", t: "درر الأحكام في شرح أركان الإسلام", o: 6 },
+
+      // الأنبياء الكرام (مكتمل مع الكتب الثلاثة من الصور)
+      91: { l: "ar", c: "الأنبياء الكرام", t: "زيارة الرسول ﷺ", o: 1 },
       5:  { l: "ar", c: "الأنبياء الكرام", t: "عصمة الأنبياء الكرام عليهم السلام", o: 2 },
+      92: { l: "ar", c: "الأنبياء الكرام", t: "حقيقة سيدنا محمد ﷺ تظهر في القرن العشرين", o: 3 },
+      93: { l: "ar", c: "الأنبياء الكرام", t: "السيد المسيح عليه السلام رسول السلام يلوح في الأفق", o: 4 },
+
+      // دراسات إسلامية
       20: { l: "ar", c: "دراسات إسلامية", t: "لمَ الحجاب ولمَ الطلاق ولمَ أكثر من زوجة يا إسلام", o: 1 },
       7:  { l: "ar", c: "دراسات إسلامية", t: "البحوث المجيدة", o: 2 },
       11: { l: "ar", c: "دراسات إسلامية", t: "الغرب حرر الإنسان من العبودية والإسلام لمَ لم يحرره", o: 3 },
@@ -904,13 +919,21 @@
       6:  { l: "ar", c: "دراسات إسلامية", t: "كشف خفايا علوم السحرة", o: 6 },
       26: { l: "ar", c: "دراسات إسلامية", t: "حقيقة تيمورلنك العظيم - الجزء الأول", o: 7 },
       24: { l: "ar", c: "دراسات إسلامية", t: "حقيقة تيمورلنك العظيم - الجزء الثاني", o: 8 },
+
+      // دراسات علميّة
       12: { l: "ar", c: "دراسات علميّة", t: "الحقيقة الرهيبة للسماوات السبع والأيام الستة", o: 1 },
       8:  { l: "ar", c: "دراسات علميّة", t: "الحجامة", o: 2 },
       13: { l: "ar", c: "دراسات علميّة", t: "الله أكبر (رفقاً بالحيوان)", o: 3 },
       10: { l: "ar", c: "دراسات علميّة", t: "وداعاً لطبيب المقوقس", o: 4 },
       15: { l: "ar", c: "دراسات علميّة", t: "مصادر مياه الينابيع في العالم", o: 5 },
+
+      // سيرة حياة العلامة
       14: { l: "ar", c: "سيرة حياة العلامة", t: "صفحات من المجد الخالد", o: 1 },
+
+      // سؤال وجواب
       3:  { l: "ar", c: "سؤال وجواب", t: "كتاب سؤال وجواب", o: 1 },
+
+      // المناهج التعليمية
       1:  { l: "ar", c: "المناهج التعليمية", t: "التربية الإسلامية للناشئة - المستوى الأول", o: 1 },
       2:  { l: "ar", c: "المناهج التعليمية", t: "التربية الإسلامية للناشئة - المستوى الثاني", o: 2 },
       16: { l: "ar", c: "المناهج التعليمية", t: "التربية الإسلامية للناشئة - المستوى الثالث", o: 3 },
@@ -1004,18 +1027,37 @@
     ];
     let currentQuizIdx = 0;
 
+    // بناء القائمة الافتراضية فوراً من الخريطة المنسقة لضمان عدم بقاء شاشة الكتب فارغة أبداً
+    function initDefaultBooksList() {
+      userUploadedBooks = Object.entries(FRONTEND_CURATED).map(([numStr, info]) => ({
+        num: Number(numStr),
+        lang: info.l,
+        category: info.c,
+        title: info.t,
+        sort_order: info.o
+      })).sort((a, b) => (a.sort_order || 50) - (b.sort_order || 50) || a.num - b.num);
+    }
+
     window.addEventListener("DOMContentLoaded", async () => {
-      if (window.Telegram && Telegram.WebApp) {
-        Telegram.WebApp.ready();
-        Telegram.WebApp.expand();
-      }
+      try {
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.ready();
+          Telegram.WebApp.expand();
+        }
+      } catch (e) {}
+
+      initDefaultBooksList();
       selectCanvas(canvasIdx, false);
       setReadingFont(currentFontKey, false);
       applyLanguage(currentLang);
       loadResumeBanner();
+      renderQuiz();
 
+      // تحميل المصحف الشريف فوراً وبأعلى أولوية
+      loadQuranJson();
+
+      // تحميل بقية ملفات البيانات بالتوازي
       await Promise.allSettled([
-        loadQuranJson(),
         loadServerCoversCatalog(),
         loadUserBooksCatalog(),
         loadStaticPages(),
@@ -1023,10 +1065,31 @@
         loadBooksSearchIndex(),
         loadDynamicQuizzes()
       ]);
-      renderBooksSection();
-      renderAudioSection();
+      renderBooksSection(activeCategoryFilter);
       renderQuiz();
     });
+
+    async function loadQuranJson() {
+      const urls = [
+        "https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran.json",
+        "https://unpkg.com/quran-json@3.1.2/dist/quran.json"
+      ];
+      for (const u of urls) {
+        try {
+          const res = await fetch(u);
+          if (res.ok) {
+            quranData = await res.json();
+            const sel = document.getElementById("surahSelect");
+            sel.innerHTML = quranData.map(s => `<option value="${s.id}">${s.id}. سورة ${s.name} (${s.total_verses} آية)</option>`).join("");
+            sel.value = currentSurah;
+            loadSurah(currentSurah, false);
+            renderAudioSection();
+            return;
+          }
+        } catch (e) {}
+      }
+      document.getElementById("quranContainer").textContent = "تعذر تحميل المصحف، يرجى التحقق من اتصال الإنترنت.";
+    }
 
     async function loadServerCoversCatalog() {
       try {
@@ -1044,7 +1107,11 @@
         if (res.ok) {
           const data = await res.json();
           const rawBooks = data.books || [];
-          userUploadedBooks = rawBooks.map(b => {
+          const mergedMap = new Map();
+
+          // دمج القائمة الأساسية مع أي كتب جديدة في السيرفر
+          userUploadedBooks.forEach(b => mergedMap.set(b.num, b));
+          rawBooks.forEach(b => {
             const c = FRONTEND_CURATED[b.num];
             if (c) {
               b.lang = c.l;
@@ -1052,8 +1119,11 @@
               b.title = c.t;
               b.sort_order = c.o;
             }
-            return b;
-          }).sort((a, b) => (a.sort_order || 50) - (b.sort_order || 50) || a.num - b.num);
+            mergedMap.set(Number(b.num), b);
+          });
+
+          userUploadedBooks = Array.from(mergedMap.values())
+            .sort((a, b) => (a.sort_order || 50) - (b.sort_order || 50) || a.num - b.num);
         }
       } catch (e) {}
     }
@@ -1104,7 +1174,6 @@
       showToast(`قريباً إن شاء الله • سيتم ربط حساب ${platformName} قريباً`);
     }
 
-    // استخراج صورة الغلاف من الموقع أو المجلد المحلي تلقائياً
     function getBookCoverUrl(b) {
       if (b.cover) return b.cover;
       if (apiBooksMeta.length) {
@@ -1149,15 +1218,6 @@
       const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
       const grid = document.getElementById("booksGrid");
 
-      if (!filtered.length) {
-        grid.innerHTML = `
-          <div style="grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);padding:20px;border-radius:14px;text-align:center;">
-            <p style="font-size:14px;color:var(--text-muted);">سيتم إدراج كتب هذا القسم فور اكتمال رفعها.</p>
-          </div>
-        `;
-        return;
-      }
-
       grid.innerHTML = filtered.map(b => {
         const p = progMap[b.num] ? progMap[b.num].pct : 0;
         const coverUrl = getBookCoverUrl(b);
@@ -1183,7 +1243,6 @@
       }).join("");
     }
 
-    // إصلاح فوري للنص داخل المتصفح أيضاً (إصلاح الأقواس المقطعة وتنسيق سؤال وجواب #3)
     function formatBookChapterHtmlInBrowser(rawHtml, chTitle, isQaBook) {
       if (!rawHtml) return "";
       const temp = document.createElement("div");
@@ -1198,7 +1257,6 @@
         lines = temp.textContent.split("\n").map(s => s.trim()).filter(Boolean);
       }
 
-      // دمج الأقواس وأرقام الآيات المقطعة على أسطر منفصلة كما في صورة سورة الهمزة
       let merged = [];
       for (let i = 0; i < lines.length; i++) {
         let cur = lines[i];
@@ -1277,7 +1335,7 @@
 
         selectBookChapter(startChap, highlightTerm, targetChapterIdx === null ? savedProg.scrollTop : 0);
       } catch (e) {
-        bodyEl.innerHTML = `<p style="text-align:center;padding:25px;">تعذر تحميل محتوى الكتاب.</p>`;
+        bodyEl.innerHTML = `<p style="text-align:center;padding:25px;">جاري تجهيز فصول هذا الكتاب في السيرفر... يرجى المحاولة بعد دقيقة.</p>`;
       }
     }
 
@@ -1365,7 +1423,6 @@
         const plainText = ch.html.replace(/<[^>]+>/g, " ");
         const sentences = plainText.split(/[\n.؟!]+/);
         sentences.forEach(s => {
-          const sNorm = normalizeArabic(s);
           const words = s.trim().split(/\s+/);
           const matchedWord = words.find(w => {
             const wi = extractStrictArabicCore(w);
@@ -1430,7 +1487,7 @@
       document.documentElement.style.setProperty("--font-size-book", next + "px");
     }
 
-    // ================== 2. محرك البحث الشامل الشبيه بـ Google (بدون ملخص ذكاء اصطناعي) ==================
+    // ================== 2. محرك البحث الشامل الشبيه بـ Google ==================
     function normalizeArabic(text) {
       if (!text) return "";
       return text
@@ -1497,7 +1554,6 @@
       let quranMatches = [];
       let bookContentMatches = [];
 
-      // 1. استخلاص الآيات القرآنية التي تذكر الكلمة أو مشتقاتها
       quranData.forEach(s => {
         s.verses.forEach(v => {
           const rawWords = v.text.split(/\s+/);
@@ -1522,7 +1578,6 @@
         });
       });
 
-      // 2. استخلاص المواضع والفقرات داخل جميع الكتب المرفوعة التي تذكر الكلمة أو مشتقاتها
       booksSearchIndex.forEach(entry => {
         const words = entry.t.split(/\s+/);
         let matchedWordStr = "";
@@ -1551,7 +1606,6 @@
         }
       });
 
-      // 3. البحث في عناوين الكتب أيضاً
       userUploadedBooks.forEach(b => {
         const bNorm = normalizeArabic(b.title || "");
         if (bNorm.includes(qNorm) || (b.title && b.title.toLowerCase().includes(rawQuery.toLowerCase()))) {
@@ -1630,14 +1684,11 @@
 
       const expEl = document.getElementById("tafsirExplanationText");
 
-      // 1. إذا كانت اللغة المختارة هي الفرنسية (FR)
       if (currentLang === "fr") {
-        const frMap = {
-          2: 73, 3: 61, 4: 80, 12: 78, 18: 77, 36: 79
-        };
+        const frMap = { 2: 73, 3: 61, 4: 80, 12: 78, 18: 77, 36: 79 };
         let targetBookNum = frMap[currentSurah];
-        if (!targetBookNum && currentSurah >= 67 && currentSurah <= 77) targetBookNum = 74; // Juz 29
-        if (!targetBookNum && currentSurah >= 78 && currentSurah <= 114) targetBookNum = 69; // Juz 30
+        if (!targetBookNum && currentSurah >= 67 && currentSurah <= 77) targetBookNum = 74;
+        if (!targetBookNum && currentSurah >= 78 && currentSurah <= 114) targetBookNum = 69;
 
         const frEntry = multilangTawil.fr && multilangTawil.fr[String(currentSurah)];
         if (targetBookNum) {
@@ -1652,18 +1703,15 @@
             ${frEntry && frEntry.html ? frEntry.html : ""}
           `;
         } else {
-          expEl.innerHTML = `
-            <p>🇫🇷 L'interprétation en français est actuellement disponible pour : <strong>Sourate Al-Baqara, Al-Imrân, An-Nissâ, Youssef, Al-Kahf, Yâ-Sîne, Juz' 29 (Tabarak) et Juz' 30 (Amma)</strong>.</p>
-          `;
+          expEl.innerHTML = `<p>🇫🇷 L'interprétation en français est disponible pour : <strong>Sourate Al-Baqara, Al-Imrân, An-Nissâ, Youssef, Al-Kahf, Yâ-Sîne, Juz' 29 (Tabarak) et Juz' 30 (Amma)</strong>.</p>`;
         }
         return;
       }
 
-      // 2. إذا كانت اللغة المختارة هي الإنجليزية (EN) -> متاح للجزء 29 والجزء 30 فقط
       if (currentLang === "en") {
         let enBookNum = null;
-        if (currentSurah >= 67 && currentSurah <= 77) enBookNum = 55; // Juz 29
-        if (currentSurah >= 78 && currentSurah <= 114) enBookNum = 54; // Juz 30
+        if (currentSurah >= 67 && currentSurah <= 77) enBookNum = 55;
+        if (currentSurah >= 78 && currentSurah <= 114) enBookNum = 54;
 
         const enEntry = multilangTawil.en && multilangTawil.en[String(currentSurah)];
         if (enBookNum) {
@@ -1678,21 +1726,23 @@
             ${enEntry && enEntry.html ? enEntry.html : ""}
           `;
         } else {
-          expEl.innerHTML = `
-            <p>🇬🇧 The English interpretation of the Holy Qur’an is currently available for <strong>Part 29 (Juz’ Tabarak, Surahs 67–77)</strong> and <strong>Part 30 (Juz’ Amma, Surahs 78–114)</strong>.</p>
-          `;
+          expEl.innerHTML = `<p>🇬🇧 The English interpretation is available for <strong>Part 29 (Juz’ Tabarak)</strong> and <strong>Part 30 (Juz’ Amma)</strong>.</p>`;
         }
         return;
       }
 
-      // 3. اللغة العربية (AR) -> ربط مباشر بمجلدات تأويل القرآن العظيم (#28 إلى #34)
+      // اللغة العربية (ربط بجميع مجلدات التأويل بما فيها جزء تبارك #81 وجزء عم #82 والمجلد الشامل #90)
       let arBookNum = 28;
-      if (currentSurah >= 3 && currentSurah <= 6) arBookNum = 29;
+      if (currentSurah === 1) arBookNum = 89;
+      else if (currentSurah === 2) arBookNum = 28;
+      else if (currentSurah >= 3 && currentSurah <= 6) arBookNum = 29;
       else if (currentSurah >= 7 && currentSurah <= 14) arBookNum = 30;
       else if (currentSurah >= 15 && currentSurah <= 25) arBookNum = 31;
       else if (currentSurah >= 26 && currentSurah <= 39) arBookNum = 32;
       else if (currentSurah >= 40 && currentSurah <= 57) arBookNum = 33;
-      else if (currentSurah >= 58) arBookNum = 34;
+      else if (currentSurah >= 58 && currentSurah <= 66) arBookNum = 34;
+      else if (currentSurah >= 67 && currentSurah <= 77) arBookNum = 81;
+      else if (currentSurah >= 78) arBookNum = 82;
 
       const arHtml = (multilangTawil.ar && multilangTawil.ar[String(currentSurah)]) || "";
       const volTitle = (FRONTEND_CURATED[arBookNum] && FRONTEND_CURATED[arBookNum].t) || "تأويل القرآن العظيم";
@@ -1708,7 +1758,7 @@
       `;
     }
 
-    // ================== 4. تلاوة الآيات المتتالية وبقية الوظائف ==================
+    // ================== 4. بقية وظائف التطبيق ==================
     function togglePlaySelectedAyahs() {
       if (isRecitingAyahs) { stopAyahRecitation(); return; }
       if (!selectedAyahs.length) return;
@@ -1914,18 +1964,6 @@
       showToast(`تم تغيير اللغة إلى ${I18N[code].name}`);
     }
 
-    async function loadQuranJson() {
-      try {
-        const res = await fetch("https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran.json");
-        quranData = await res.json();
-        const sel = document.getElementById("surahSelect");
-        sel.innerHTML = quranData.map(s => `<option value="${s.id}">${s.id}. سورة ${s.name} (${s.total_verses} آية)</option>`).join("");
-        sel.value = currentSurah;
-        loadSurah(currentSurah, false);
-        renderAudioSection();
-      } catch (e) {}
-    }
-
     function loadSurah(surahId, resetScroll = true) {
       stopAyahRecitation();
       currentSurah = parseInt(surahId, 10);
@@ -2086,38 +2124,40 @@
     }
 
     function applyLanguage(lang) {
-      currentLang = I18N[lang] ? lang : "ar";
-      localStorage.setItem("roh_lang", currentLang);
-      const t = I18N[currentLang];
+      try {
+        currentLang = I18N[lang] ? lang : "ar";
+        localStorage.setItem("roh_lang", currentLang);
+        const t = I18N[currentLang];
 
-      document.documentElement.lang = currentLang;
-      document.documentElement.dir = t.dir;
-      document.getElementById("ui-app-title").textContent = t.appTitle;
-      document.getElementById("ui-drawer-title").textContent = t.appTitle;
-      document.getElementById("ui-search-btn").textContent = t.searchBtn;
-      document.getElementById("searchInput").placeholder = t.searchPh;
-      document.getElementById("ui-res-quran").textContent = t.resQuran;
-      document.getElementById("ui-tab-mushaf").textContent = t.tabMushaf;
-      document.getElementById("ui-tab-books").textContent = t.tabBooks;
-      document.getElementById("ui-tab-audio").textContent = t.tabAudio;
-      document.getElementById("ui-tab-quiz").textContent = t.tabQuiz;
-      document.getElementById("ui-sec-content").textContent = t.secContent;
-      document.getElementById("ui-menu-bookmarks").textContent = t.menuBookmarks;
-      document.getElementById("ui-menu-reciters").textContent = t.menuReciters;
-      document.getElementById("ui-sec-about").textContent = t.secAbout;
-      document.getElementById("ui-menu-dawah").textContent = t.menuDawah;
-      document.getElementById("ui-menu-bio").textContent = t.menuBio;
-      document.getElementById("ui-menu-verifier").textContent = t.menuVerifier;
-      document.getElementById("ui-menu-about").textContent = t.menuAbout;
-      document.getElementById("ui-menu-share").textContent = t.menuShare;
-      document.getElementById("ui-menu-wakelock").textContent = t.menuWake;
-      document.getElementById("ui-menu-lang").textContent = t.menuLang;
-      document.getElementById("currentLangLabel").textContent = `${t.flag} ${t.name}`;
-      document.getElementById("ui-tafsir-label").textContent = t.tafsirLabel;
-      document.getElementById("ui-books-heading").textContent = t.booksHeading;
-      document.getElementById("ui-audio-heading").textContent = t.audioHeading;
+        document.documentElement.lang = currentLang;
+        document.documentElement.dir = t.dir;
+        document.getElementById("ui-app-title").textContent = t.appTitle;
+        document.getElementById("ui-drawer-title").textContent = t.appTitle;
+        document.getElementById("ui-search-btn").textContent = t.searchBtn;
+        document.getElementById("searchInput").placeholder = t.searchPh;
+        document.getElementById("ui-res-quran").textContent = t.resQuran;
+        document.getElementById("ui-tab-mushaf").textContent = t.tabMushaf;
+        document.getElementById("ui-tab-books").textContent = t.tabBooks;
+        document.getElementById("ui-tab-audio").textContent = t.tabAudio;
+        document.getElementById("ui-tab-quiz").textContent = t.tabQuiz;
+        document.getElementById("ui-sec-content").textContent = t.secContent;
+        document.getElementById("ui-menu-bookmarks").textContent = t.menuBookmarks;
+        document.getElementById("ui-menu-reciters").textContent = t.menuReciters;
+        document.getElementById("ui-sec-about").textContent = t.secAbout;
+        document.getElementById("ui-menu-dawah").textContent = t.menuDawah;
+        document.getElementById("ui-menu-bio").textContent = t.menuBio;
+        document.getElementById("ui-menu-verifier").textContent = t.menuVerifier;
+        document.getElementById("ui-menu-about").textContent = t.menuAbout;
+        document.getElementById("ui-menu-share").textContent = t.menuShare;
+        document.getElementById("ui-menu-wakelock").textContent = t.menuWake;
+        document.getElementById("ui-menu-lang").textContent = t.menuLang;
+        document.getElementById("currentLangLabel").textContent = `${t.flag} ${t.name}`;
+        document.getElementById("ui-tafsir-label").textContent = t.tafsirLabel;
+        document.getElementById("ui-books-heading").textContent = t.booksHeading;
+        document.getElementById("ui-audio-heading").textContent = t.audioHeading;
 
-      renderBooksSection(null);
+        renderBooksSection(null);
+      } catch (e) {}
     }
 
     function toggleSearch() {
