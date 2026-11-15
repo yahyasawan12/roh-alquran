@@ -1,8 +1,71 @@
 {
-  "last_update_id": 0,
+  "last_update_id": 104067781,
   "active_cat_id": null,
-  "file_hashes": {},
-  "tg_unique_ids": {},
-  "books_done": {},
+  "file_hashes": {
+    "959ae8422f154a73af1585c9e79ce9ddcd5d64758f9a9f0b2c9a1039dd8f09fe": "778",
+    "c68f515751d3c0d0b1579320e17548d11934c17ac1e0391fd242533a56612a15": "683",
+    "6f5ce717804f9475db8c3573455e45309d7311d4c5de6ec2557fbffed56e5529": "683",
+    "2843c3e6b8cde4e18bef630d703e312ce823af3a2aadc987e7d5b24fbc0521e7": "801",
+    "287d392320aba6170257c9f36326b6f22921799e986f08f8268cdc90508b0a3e": "803",
+    "88b8c77e98aea8f2810456057584ff01073f5f21daa0283dccc19982ea8b761f": "803",
+    "b18d69be1e867c92e5d5938a82eafb46bb6ce945b7c8ed02cb8c96e415497040": "801",
+    "7f9184d288eb2561588aab872db3b30b15d4c9867d0a42cc59b918c385b1b5aa": "802",
+    "c47802cf0db591b9740c52a2f1ef051a1dc5381a124beb5570378492114e39aa": "802",
+    "9de9a64dcb9db5e6c39f1a30aa57bd6627ae71ff7a3922c635f64121d6c29d53": "778"
+  },
+  "tg_unique_ids": {
+    "AgADwR0AAm2x0VM": "778",
+    "AgADxh0AAm2x0VM": "683",
+    "AgADxx0AAm2x0VM": "683",
+    "AgADyR0AAm2x0VM": "801",
+    "AgADyx0AAm2x0VM": "803",
+    "AgADzx0AAm2x0VM": "803",
+    "AgAD0h0AAm2x0VM": "801",
+    "AgAD0x0AAm2x0VM": "802",
+    "AgAD1R0AAm2x0VM": "802",
+    "AgAD3h0AAm2x0VM": "778"
+  },
+  "books_done": {
+    "778": {
+      "id": 778,
+      "name": "سؤال وجواب",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/778.epub",
+      "tg_file_id": "BQACAgQAAxkBAANFavml2eRkrc00EdudokuLeaGYbOwAAt4dAAJtsdFTymGmRTPMLUU9BA"
+    },
+    "683": {
+      "id": 683,
+      "name": "البحوث المجيدة",
+      "format": "pdf",
+      "has_extracted_text": false,
+      "local_path": "data/files/books/683.pdf",
+      "tg_file_id": "BQACAgQAAxkBAAMuavml2Y2od8mu3aGKIe41wndsYiYAAscdAAJtsdFTHJsKhpC6uTE9BA"
+    },
+    "801": {
+      "id": 801,
+      "name": "الحجامة",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/801.epub",
+      "tg_file_id": "BQACAgQAAxkBAAM5avml2cSBWsyHwVlDcZcz8ZQdbOMAAtIdAAJtsdFTbmwnBzd11Kw9BA"
+    },
+    "803": {
+      "id": 803,
+      "name": "وداعاً لطبيب المقوقس",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/803.epub",
+      "tg_file_id": "BQACAgQAAxkBAAM2avml2atkVm_VQB5gP56bMxLImhoAAs8dAAJtsdFT06VxWgGsu6o9BA"
+    },
+    "802": {
+      "id": 802,
+      "name": "اللهُ أَكبَر (رفقاً بالحيوان)",
+      "format": "epub",
+      "has_extracted_text": true,
+      "local_path": "data/files/books/802.epub",
+      "tg_file_id": "BQACAgQAAxkBAAM8avml2bSOlNBdH6FFg_45zzcqMLUAAtUdAAJtsdFTzr9mQ3fmSfw9BA"
+    }
+  },
   "audios_done": {}
 }

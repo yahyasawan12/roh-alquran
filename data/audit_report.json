@@ -1,7 +1,7 @@
 {
   "total_books_target": 95,
-  "books_completed_count": 0,
-  "books_missing_count": 95,
+  "books_completed_count": 5,
+  "books_missing_count": 90,
   "total_audios_target": 528,
   "audios_completed_count": 0,
   "audios_missing_count": 528,
@@ -109,12 +109,6 @@
       "category": "دراسات إسلامية"
     },
     {
-      "id": 683,
-      "name": "البحوث المجيدة",
-      "lang": "ar",
-      "category": "دراسات إسلامية"
-    },
-    {
       "id": 684,
       "name": "الغرب حرّر الإنسان من العبودية والإسلام لمَ لم يحرّره؟",
       "lang": "ar",
@@ -173,12 +167,6 @@
       "name": "تأويل القرآن العظيم - المجلّد الأول",
       "lang": "ar",
       "category": "تأويل القرآن العظيم"
-    },
-    {
-      "id": 778,
-      "name": "سؤال وجواب",
-      "lang": "ar",
-      "category": "سؤال و جواب"
     },
     {
       "id": 779,
@@ -305,24 +293,6 @@
       "name": "Proclaiming God’s Love",
       "lang": "en",
       "category": "Scientific Studies"
-    },
-    {
-      "id": 801,
-      "name": "الحجامة",
-      "lang": "ar",
-      "category": "دراسات علمية"
-    },
-    {
-      "id": 802,
-      "name": "اللهُ أَكبَر (رفقاً بالحيوان)",
-      "lang": "ar",
-      "category": "دراسات علمية"
-    },
-    {
-      "id": 803,
-      "name": "وداعاً لطبيب المقوقس",
-      "lang": "ar",
-      "category": "دراسات علمية"
     },
     {
       "id": 804,
