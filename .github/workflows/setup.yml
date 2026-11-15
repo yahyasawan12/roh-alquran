@@ -1,4 +1,4 @@
-name: Curate 80 Books, Fix Formatting, Fetch Covers & Build Search/Tafsir Index
+name: Curate 93 Books, Extract Merged Tafsir & Build Search Index
 
 on:
   push:
@@ -19,14 +19,13 @@ jobs:
       - name: Install Python Libraries
         run: pip install requests beautifulsoup4 lxml pymupdf urllib3
 
-      - name: Re-Format Books, Apply Categories, Download Covers & Index New Files
+      - name: Process New Books (81-93), Extract Merged Tafsir & Build Full Index
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
         run: |
           python3 - << 'EOF'
           import os, re, io, json, hashlib, zipfile, urllib3
-          import xml.etree.ElementTree as ET
           import requests
           import fitz
           from bs4 import BeautifulSoup
@@ -50,12 +49,12 @@ jobs:
                       pass
               return last_mid
 
+          latest_mid = send_tg("⏳ جاري سحب الكتب الـ 13 الجديدة (جزء تبارك، جزء عم، موسوعة عم، سور الفيل وقريش والماعون والهمزة، تأويل الأمين، السبع المثاني، التأويل الشامل، وكتب الأنبياء الكرام) ودمجها في التطبيق...")
+
           os.makedirs("data/user_books", exist_ok=True)
           os.makedirs("data/covers", exist_ok=True)
 
-          # ================== 1. جدول التنقيح والتصنيف الدقيق للكتب الـ 80 ==================
           CURATED_MAP = {
-              # 🇸🇾 الكتب العربية - تأويل القرآن العظيم
               28: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - المجلد الأول", 1),
               29: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - المجلد الثاني", 2),
               30: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - المجلد الثالث", 3),
@@ -63,8 +62,17 @@ jobs:
               32: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - المجلد الخامس", 5),
               33: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - المجلد السادس", 6),
               34: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - جزء قد سمع", 7),
+              81: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - جزء تبارك", 8),
+              82: ("ar", "تأويل القرآن العظيم", "تأويل القرآن العظيم - جزء عمّ", 9),
+              83: ("ar", "تأويل القرآن العظيم", "موسوعة جزء عمّ", 10),
+              84: ("ar", "تأويل القرآن العظيم", "تأويل سورة الفيل", 11),
+              85: ("ar", "تأويل القرآن العظيم", "تأويل سورة قريش", 12),
+              86: ("ar", "تأويل القرآن العظيم", "تأويل سورة الماعون", 13),
+              87: ("ar", "تأويل القرآن العظيم", "تأويل سورة الهمزة", 14),
+              88: ("ar", "تأويل القرآن العظيم", "تأويل الأمين للقرآن العظيم", 15),
+              89: ("ar", "تأويل القرآن العظيم", "أسرار السبع المثاني وحقائقها", 16),
+              90: ("ar", "تأويل القرآن العظيم", "موسوعة تأويل القرآن العظيم (جميع المجلدات)", 17),
 
-              # 🇸🇾 الكتب العربية - أركان الإسلام
               23: ("ar", "أركان الإسلام", "الإيمان - أول المدارس العليا للتقوى", 1),
               22: ("ar", "أركان الإسلام", "الصلاة - ثاني المدارس العليا للتقوى", 2),
               21: ("ar", "أركان الإسلام", "الزكاة - ثالث المدارس العليا للتقوى", 3),
@@ -72,10 +80,11 @@ jobs:
               18: ("ar", "أركان الإسلام", "الحج - خامس المدارس العليا للتقوى", 5),
               25: ("ar", "أركان الإسلام", "درر الأحكام في شرح أركان الإسلام", 6),
 
-              # 🇸🇾 الكتب العربية - الأنبياء الكرام
+              91: ("ar", "الأنبياء الكرام", "زيارة الرسول ﷺ", 1),
               5:  ("ar", "الأنبياء الكرام", "عصمة الأنبياء الكرام عليهم السلام", 2),
+              92: ("ar", "الأنبياء الكرام", "حقيقة سيدنا محمد ﷺ تظهر في القرن العشرين", 3),
+              93: ("ar", "الأنبياء الكرام", "السيد المسيح عليه السلام رسول السلام يلوح في الأفق", 4),
 
-              # 🇸🇾 الكتب العربية - دراسات إسلامية
               20: ("ar", "دراسات إسلامية", "لمَ الحجاب ولمَ الطلاق ولمَ أكثر من زوجة يا إسلام", 1),
               7:  ("ar", "دراسات إسلامية", "البحوث المجيدة", 2),
               11: ("ar", "دراسات إسلامية", "الغرب حرر الإنسان من العبودية والإسلام لمَ لم يحرره", 3),
@@ -85,54 +94,38 @@ jobs:
               26: ("ar", "دراسات إسلامية", "حقيقة تيمورلنك العظيم - الجزء الأول", 7),
               24: ("ar", "دراسات إسلامية", "حقيقة تيمورلنك العظيم - الجزء الثاني", 8),
 
-              # 🇸🇾 الكتب العربية - دراسات علميّة
               12: ("ar", "دراسات علميّة", "الحقيقة الرهيبة للسماوات السبع والأيام الستة", 1),
               8:  ("ar", "دراسات علميّة", "الحجامة", 2),
               13: ("ar", "دراسات علميّة", "الله أكبر (رفقاً بالحيوان)", 3),
               10: ("ar", "دراسات علميّة", "وداعاً لطبيب المقوقس", 4),
               15: ("ar", "دراسات علميّة", "مصادر مياه الينابيع في العالم", 5),
 
-              # 🇸🇾 الكتب العربية - سيرة حياة العلامة
               14: ("ar", "سيرة حياة العلامة", "صفحات من المجد الخالد", 1),
-
-              # 🇸🇾 الكتب العربية - سؤال وجواب
               3:  ("ar", "سؤال وجواب", "كتاب سؤال وجواب", 1),
 
-              # 🇸🇾 الكتب العربية - المناهج التعليمية
               1:  ("ar", "المناهج التعليمية", "التربية الإسلامية للناشئة - المستوى الأول", 1),
               2:  ("ar", "المناهج التعليمية", "التربية الإسلامية للناشئة - المستوى الثاني", 2),
               16: ("ar", "المناهج التعليمية", "التربية الإسلامية للناشئة - المستوى الثالث", 3),
               4:  ("ar", "المناهج التعليمية", "التربية الإسلامية للناشئة - المستوى الرابع", 4),
               17: ("ar", "المناهج التعليمية", "حقائق علم النفس والاجتماع", 6),
 
-              # 🇬🇧 الكتب الإنجليزية - Interpretation of the Holy Qur’an
               55: ("en", "Interpretation of the Holy Qur’an", "Interpretation of the Twenty-Ninth Part of the Holy Qur’an (Juz’ Tabarak)", 1),
               54: ("en", "Interpretation of the Holy Qur’an", "Interpretation of the Thirtieth Part of the Holy Qur’an (Juz’ Amma)", 2),
-
-              # 🇬🇧 الكتب الإنجليزية - Pillars of Islam
               37: ("en", "Pillars of Islam", "Zakat (Alms Giving)", 1),
               58: ("en", "Pillars of Islam", "Fasting (Al-Sawm)", 2),
               47: ("en", "Pillars of Islam", "Pilgrimage (Al-Hajj)", 3),
-
-              # 🇬🇧 الكتب الإنجليزية - Islamic Studies
               52: ("en", "Islamic Studies", "Islam! What Are the Veil, Divorce, and Polygamy for?", 1),
               51: ("en", "Islamic Studies", "Is Happiness Really Beyond Reach?!", 2),
               35: ("en", "Islamic Studies", "The Coming of Christ Again", 3),
               36: ("en", "Islamic Studies", "Unveiling the Secrets of Magic and Magicians", 4),
               38: ("en", "Islamic Studies", "The Origin of Creation", 5),
-
-              # 🇬🇧 الكتب الإنجليزية - Scientific Studies
               39: ("en", "Scientific Studies", "The Sources of Spring Water in the World", 1),
               41: ("en", "Scientific Studies", "The Effective Medication", 2),
               56: ("en", "Scientific Studies", "Cupping (Al-Hijama)", 3),
-
-              # 🇬🇧 الكتب الإنجليزية - Educational Programs
               53: ("en", "Educational Programs", "Islamic Education for Youths - Level One", 1),
               50: ("en", "Educational Programs", "Islamic Education for Youths - Level Two", 2),
               49: ("en", "Educational Programs", "Islamic Education for Youths - Level Three", 3),
               57: ("en", "Educational Programs", "Facts of Psychology and Sociology", 4),
-
-              # 🇬🇧 الكتب الإنجليزية - Stories of the Scholar Mohammad Amin Sheikho
               48: ("en", "Stories of the Scholar Mohammad Amin Sheikho", "Stories of the Scholar Mohammad Amin Sheikho (His Life, His Deeds, His Way to Allah)", 1),
               60: ("en", "Stories of the Scholar Mohammad Amin Sheikho", "Stories of the Scholar Mohammad Amin Sheikho - Part 1", 2),
               59: ("en", "Stories of the Scholar Mohammad Amin Sheikho", "Stories of the Scholar Mohammad Amin Sheikho - Part 2", 3),
@@ -143,7 +136,6 @@ jobs:
               43: ("en", "Stories of the Scholar Mohammad Amin Sheikho", "Stories of the Scholar Mohammad Amin Sheikho - Part 7", 8),
               40: ("en", "Stories of the Scholar Mohammad Amin Sheikho", "Stories of the Scholar Mohammad Amin Sheikho - Part 8", 9),
 
-              # 🇫🇷 الكتب الفرنسية - Interprétation du Saint Coran
               73: ("fr", "Interprétation du Saint Coran", "Interprétation de la Sourate Al-Baqara", 1),
               61: ("fr", "Interprétation du Saint Coran", "Interprétation de la Sourate Al-Imrân", 2),
               80: ("fr", "Interprétation du Saint Coran", "Interprétation de la Sourate An-Nissâ", 3),
@@ -152,85 +144,80 @@ jobs:
               79: ("fr", "Interprétation du Saint Coran", "Interprétation de la Sourate Yâ-Sîne", 6),
               74: ("fr", "Interprétation du Saint Coran", "Interprétation de la Partie 29 (Juz’ Tabarak)", 7),
               69: ("fr", "Interprétation du Saint Coran", "Interprétation de la Partie 30 (Juz’ Amma)", 8),
-
-              # 🇫🇷 الكتب الفرنسية - Les Piliers de l'Islam
               72: ("fr", "Les Piliers de l'Islam", "La Vérité de la Prière (As-Salât)", 1),
               71: ("fr", "Les Piliers de l'Islam", "L'Aumône (Az-Zakât)", 2),
               70: ("fr", "Les Piliers de l'Islam", "Le Pèlerinage (Al-Hajj)", 3),
-
-              # 🇫🇷 الكتب الفرنسية - Études Islamiques
               75: ("fr", "Études Islamiques", "Le Monde Pré-Matériel", 1),
               68: ("fr", "Études Islamiques", "Dévoiler les Secrets de la Magie et des Magiciens", 2),
-
-              # 🇫🇷 الكتب الفرنسية - Études Scientifiques
               62: ("fr", "Études Scientifiques", "Les Origines des Eaux de Source dans le Monde", 1),
               76: ("fr", "Études Scientifiques", "Proclamer l'Amour de Dieu", 2),
               64: ("fr", "Études Scientifiques", "Le Bonheur, Est-il vraiment hors de portée ?", 3),
-
-              # 🇫🇷 الكتب الفرنسية - Programmes Pédagogiques
               63: ("fr", "Programmes Pédagogiques", "Éducation Islamique pour la Jeunesse - Niveau 1", 1),
               67: ("fr", "Programmes Pédagogiques", "Éducation Islamique pour la Jeunesse - Niveau 2", 2),
               65: ("fr", "Programmes Pédagogiques", "Éducation Islamique pour la Jeunesse - Niveau 3", 3),
               66: ("fr", "Programmes Pédagogiques", "Faits de Psychologie et de Sociologie", 4)
           }
 
-          # ================== 2. دالة تنظيف وإصلاح تنسيق النصوص (إصلاح الأقواس المقطعة وتنسيق سؤال وجواب) ==================
+          def detect_fixed_book_num(fname):
+              fn = fname.lower()
+              if "01-08" in fn or "تبارك" in fn: return 81
+              if "01-09" in fn or ("ج9" in fn and "عم" in fn): return 82
+              if "01-12" in fn or "موسوعة-عم" in fn or "موسوعة_عم" in fn: return 83
+              if "01-15" in fn or "الفيل" in fn: return 84
+              if "01-14" in fn or "قريش" in fn: return 85
+              if "01-13" in fn or "الماعون" in fn: return 86
+              if "01-16" in fn or "الهمزة" in fn: return 87
+              if "01-10" in fn or "تأويل-الأمين" in fn: return 88
+              if "01-11" in fn or "السبع-المثاني" in fn: return 89
+              if "01_00" in fn or "01-00" in fn or "جميع_المجلدات" in fn or "جميع-المجلدات" in fn: return 90
+              if "03-01" in fn or "زيارة-الرسول" in fn: return 91
+              if "03-02" in fn or "حقيقة-سيدنا-محمد" in fn: return 92
+              if "03-03" in fn or "السيد-المسيح" in fn: return 93
+              return None
+
           def clean_and_format_chapter_html(raw_html, ch_title="", is_qa_book=False):
-              if not raw_html:
-                  return "", ""
+              if not raw_html: return "", ""
               soup = BeautifulSoup(raw_html, "lxml")
               raw_lines = [p.get_text(" ", strip=True) for p in soup.find_all(["p", "h1", "h2", "h3", "h4", "li", "div"]) if p.get_text(" ", strip=True)]
               if not raw_lines:
                   raw_lines = [ln.strip() for ln in soup.get_text("\n").split("\n") if ln.strip()]
 
-              # دمج الأسطر المقطعة بالخطأ (مثل القوس المنفرد ')' أو الرقم المنفرد '1' أو '(' كما في صورة سورة الهمزة)
               merged_lines = []
               i = 0
               while i < len(raw_lines):
                   curr = raw_lines[i].strip()
-                  # تخطي العنوان المكرر في أول الفصل
                   if i == 0 and ch_title and curr == ch_title.strip():
                       i += 1
                       continue
-
-                  # إذا كان السطر التالي عبارة عن قوس أو رقم آية مقطوع: ) ثم 1 ثم (
                   if i + 2 < len(raw_lines) and raw_lines[i+1] in [")", "("] and re.match(r'^\d+$', raw_lines[i+2]):
                       num_val = raw_lines[i+2]
                       curr = f"{curr} ﴿{num_val}﴾"
                       i += 4 if (i + 3 < len(raw_lines) and raw_lines[i+3] in [")", "("]) else 3
                       merged_lines.append(curr)
                       continue
-
-                  # إذا كان السطر الحالي قوساً منفرداً أو رقماً منفرداً ندمجه مع السطر السابق
                   if re.match(r'^[\(\)\[\]﴿﴾\d\s]{1,6}$', curr):
                       num_m = re.search(r'(\d+)', curr)
                       if num_m and merged_lines:
                           merged_lines[-1] = re.sub(r'[\(\)]$', '', merged_lines[-1]).strip() + f" ﴿{num_m.group(1)}﴾"
                       i += 1
                       continue
-
-                  # إصلاح الأقواس المعكوسة داخل السطر نفسه مثل ) 1 ( أو ( 1 )
                   curr = re.sub(r'[\)\(]\s*(\d{1,3})\s*[\)\(]', r' ﴿\1﴾ ', curr)
                   curr = re.sub(r'\s+', ' ', curr).strip()
-
                   if merged_lines and merged_lines[-1] == curr:
                       i += 1
                       continue
-
                   merged_lines.append(curr)
                   i += 1
 
-              # بناء HTML أنيق جداً (مع تنسيق خاص لكتاب سؤال وجواب #3)
               formatted_blocks = []
               for ln in merged_lines:
-                  if is_qa_book or re.match(r'^(سؤال|السؤال|س\s*[:\-]|س\d*\s*[:\-]|Question\s*[:\-])', ln, re.I):
-                      if re.match(r'^(سؤال|السؤال|س\s*[:\-]|س\d*\s*[:\-]|Question)', ln, re.I) or (is_qa_book and "؟" in ln and len(ln) < 220):
+                  if is_qa_book or re.match(r'^(سؤال|السؤال|س\s*[:\-]|Question)', ln, re.I):
+                      if re.match(r'^(سؤال|السؤال|س\s*[:\-]|Question)', ln, re.I) or (is_qa_book and "؟" in ln and len(ln) < 220):
                           formatted_blocks.append(f'<div class="qa-question">❓ {ln}</div>')
                           continue
                       elif re.match(r'^(جواب|الجواب|ج\s*[:\-]|الإجابة|Answer|Réponse)', ln, re.I):
                           formatted_blocks.append(f'<div class="qa-answer">💡 {ln}</div><hr class="qa-divider"/>')
                           continue
-
                   if len(ln) < 80 and any(ln.startswith(k) for k in ["سورة ", "الفصل ", "الباب ", "المبحث ", "تمهيد", "مقدمة", "Chapitre", "Chapter", "Sourate", "Surah"]):
                       formatted_blocks.append(f'<h3>{ln}</h3>')
                   else:
@@ -239,61 +226,80 @@ jobs:
                       else:
                           formatted_blocks.append(f'<p>{ln}</p>')
 
-              clean_html = "\n".join(formatted_blocks)
-              plain_text = " ".join(merged_lines)
-              return clean_html, plain_text
+              return "\n".join(formatted_blocks), " ".join(merged_lines)
 
-          # ================== 3. قراءة الكتالوج الحالي واستقبال أي ملفات جديدة أرسلها المستخدم للبوت/القناة ==================
           catalog_path = "data/user_books_catalog.json"
           if os.path.exists(catalog_path):
               with open(catalog_path, "r", encoding="utf-8") as f:
                   catalog_state = json.load(f)
           else:
-              catalog_state = {"next_num": 81, "scanned_msg_ids": [], "file_hashes": {}, "books": []}
+              catalog_state = {"next_num": 94, "scanned_msg_ids": [], "file_hashes": {}, "books": []}
 
           scanned_set = set(catalog_state.get("scanned_msg_ids", []))
           books_list = catalog_state.get("books", [])
 
-          def clean_book_name_str(s):
-              s = re.sub(r'\.(pdf|epub|docx)$', '', str(s), flags=re.I)
-              s = re.sub(r'^[0-9_\-\s]+', '', s)
-              s = s.replace('_', ' ').replace('-', ' - ')
-              return re.sub(r'\s+', ' ', s).strip()
-
-          # فحص الرسائل الجديدة في getUpdates لاستلام الكتب الناقصة التي أرسلها المستخدم الآن
+          # جمع الرسائل الجديدة من getUpdates + فحص آخر 90 رسالة في المحادثة لالتقاط الملفات الـ 13 الجديدة
+          candidate_docs = []
           up_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?limit=100", timeout=25).json()
-          new_books_report = []
-
           for u in up_res.get("result", []):
               msg = u.get("message") or u.get("channel_post") or {}
               mid = msg.get("message_id")
               doc = msg.get("document")
-              if not doc or not mid or mid in scanned_set:
-                  continue
-              scanned_set.add(mid)
+              if doc and mid and mid not in scanned_set:
+                  candidate_docs.append((mid, doc, (msg.get("caption") or "").strip()))
 
+          if latest_mid and latest_mid > 1:
+              for mid in range(max(1, latest_mid - 90), latest_mid):
+                  if mid in scanned_set:
+                      continue
+                  try:
+                      fw = requests.post(
+                          f"https://api.telegram.org/bot{TOKEN}/forwardMessage",
+                          json={"chat_id": ADMIN_ID, "from_chat_id": ADMIN_ID, "message_id": mid, "disable_notification": True},
+                          timeout=10
+                      ).json()
+                      if fw.get("ok"):
+                          res_msg = fw["result"]
+                          tmid = res_msg.get("message_id")
+                          if tmid:
+                              requests.post(f"https://api.telegram.org/bot{TOKEN}/deleteMessage", json={"chat_id": ADMIN_ID, "message_id": tmid}, timeout=8)
+                          doc = res_msg.get("document")
+                          if doc:
+                              candidate_docs.append((mid, doc, (res_msg.get("caption") or "").strip()))
+                          else:
+                              scanned_set.add(mid)
+                      else:
+                          scanned_set.add(mid)
+                  except Exception:
+                      pass
+
+          # نرتب الملفات بحيث نعطي الأولوية لملفات EPUB قبل PDF لنفس الكتاب
+          candidate_docs.sort(key=lambda x: (0 if (x[1].get("file_name") or "").lower().endswith(".epub") else 1, x[0]))
+
+          new_books_added = []
+          for mid, doc, caption in candidate_docs:
+              scanned_set.add(mid)
               fname = doc.get("file_name") or "book"
               fsize = doc.get("file_size", 0)
               fid = doc.get("file_id")
               if not (fname.lower().endswith(".epub") or fname.lower().endswith(".pdf")) or fsize >= 19950000:
                   continue
 
+              fixed_num = detect_fixed_book_num(fname)
+              # إذا كان الكتاب من الـ 13 كتاباً الجديدة وموجوداً مسبقاً بصيغة EPUB نتخطى نسخة الـ PDF المكررة له
+              if fixed_num and os.path.exists(f"data/user_books/{fixed_num}.json") and fname.lower().endswith(".pdf"):
+                  continue
+
               try:
                   finfo = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=20).json()
                   fpath = (finfo.get("result") or {}).get("file_path")
                   if not fpath: continue
-                  raw_bytes = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=50).content
+                  raw_bytes = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=55).content
               except Exception:
-                  continue
-
-              fhash = hashlib.sha256(raw_bytes).hexdigest()
-              if fhash in catalog_state["file_hashes"]:
                   continue
 
               ext = "epub" if fname.lower().endswith(".epub") else "pdf"
               chapters = []
-              extracted_title = clean_book_name_str(fname)
-
               if ext == "epub":
                   try:
                       with zipfile.ZipFile(io.BytesIO(raw_bytes), 'r') as z:
@@ -306,15 +312,15 @@ jobs:
                               ctitle = h_tags[0] if h_tags else f"الفصل {idx}"
                               ch_html, ch_plain = clean_and_format_chapter_html(str(sp.body or sp), ctitle, False)
                               if len(ch_plain) > 20:
-                                  chapters.append({"idx": len(chapters)+1, "title": ctitle[:70], "html": ch_html})
+                                  chapters.append({"idx": len(chapters)+1, "title": ctitle[:75], "html": ch_html})
                   except Exception:
                       pass
               else:
                   try:
                       pdf_doc = fitz.open(stream=raw_bytes, filetype="pdf")
                       total_p = len(pdf_doc)
-                      for start_p in range(0, total_p, 10):
-                          end_p = min(total_p, start_p + 10)
+                      for start_p in range(0, total_p, 8):
+                          end_p = min(total_p, start_p + 8)
                           p_html_list = []
                           for pno in range(start_p, end_p):
                               pt = pdf_doc[pno].get_text("text").strip()
@@ -329,50 +335,31 @@ jobs:
               if not chapters:
                   continue
 
-              bnum = max(catalog_state.get("next_num", 81), max([b["num"] for b in books_list] + [80]) + 1)
-              catalog_state["next_num"] = bnum + 1
-              catalog_state["file_hashes"][fhash] = bnum
+              bnum = fixed_num if fixed_num else max(catalog_state.get("next_num", 94), 94)
+              if not fixed_num:
+                  catalog_state["next_num"] = bnum + 1
 
-              caption = (msg.get("caption") or "").strip()
-              if caption: extracted_title = caption
+              c_lang, c_cat, c_title, c_order = CURATED_MAP.get(bnum, ("ar", "الكتب المرفوعة", fname, 50))
 
-              sample_txt = " ".join(c["html"][:300] for c in chapters[:2])
-              ar_cnt = len(re.findall(r'[\u0600-\u06FF]', extracted_title + sample_txt))
-              lang = "ar" if ar_cnt > 15 else ("fr" if re.search(r'[éèêàùç]|interprétation|islamique', (extracted_title+sample_txt).lower()) else "en")
-
+              # تحديث أو إضافة في قائمة الكتب
+              books_list = [b for b in books_list if int(b["num"]) != bnum]
               books_list.append({
                   "num": bnum,
-                  "title": extracted_title,
-                  "lang": lang,
-                  "category": "كتب جديدة بانتظار التصنيف",
-                  "sort_order": 99,
+                  "title": c_title,
+                  "lang": c_lang,
+                  "category": c_cat,
+                  "sort_order": c_order,
                   "cover": "",
                   "format": ext,
                   "chapters_count": len(chapters)
               })
+
               with open(f"data/user_books/{bnum}.json", "w", encoding="utf-8") as bf:
-                  json.dump({"num": bnum, "title": extracted_title, "lang": lang, "chapters": chapters}, bf, ensure_ascii=False)
+                  json.dump({"num": bnum, "title": c_title, "lang": c_lang, "category": c_cat, "chapters": chapters}, bf, ensure_ascii=False)
 
-              new_books_report.append(f"🆕 رقم [#{bnum}] : {extracted_title} ({lang.upper()} - {len(chapters)} فصل)")
+              new_books_added.append(f"✅ [#{bnum}] {c_title} ({len(chapters)} فصل)")
 
-          # ================== 4. سحب صور الأغلفة الرسمية من الموقع ومطابقتها تلقائياً ==================
-          api_books = []
-          if os.path.exists("data/api_v1_books.json"):
-              with open("data/api_v1_books.json", "r", encoding="utf-8") as f:
-                  api_books = [b for b in json.load(f).get("data", []) if not b.get("is_audio")]
-
-          def norm_match(s):
-              s = re.sub(r'[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]', '', str(s))
-              s = re.sub(r'[أإآٱ]', 'ا', s)
-              s = re.sub(r'ة', 'ه', s)
-              s = re.sub(r'[^\w\s]', ' ', s).lower()
-              return re.sub(r'\s+', ' ', s).strip()
-
-          # ================== 5. تطبيق التنقيح والتصنيف وإصلاح التنسيق الداخلي لجميع الكتب وبناء فهرس البحث والتأويل ==================
-          search_index = []
-          tafsir_db = {"ar": {}, "fr": {}, "en": {}}
-
-          # قائمة أسماء السور لمطابقة فصول التأويل تلقائياً
+          # تحديث جميع الكتب وبناء كشاف البحث والتأويل الشامل (بما فيه ملف التأويل المدمج #90)
           SURAH_NAMES_AR = [
               "الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس",
               "هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه",
@@ -388,96 +375,40 @@ jobs:
               "المسد","الإخلاص","الفلق","الناس"
           ]
 
+          search_index = []
+          tafsir_db = {"ar": {}, "fr": {}, "en": {}}
+
           for b in books_list:
               bnum = int(b["num"])
               if bnum in CURATED_MAP:
-                  c_lang, c_cat, c_title, c_order = CURATED_MAP[bnum]
-                  b["lang"] = c_lang
-                  b["category"] = c_cat
-                  b["title"] = c_title
-                  b["sort_order"] = c_order
-              else:
-                  b["title"] = clean_book_name_str(b.get("title", f"كتاب {bnum}"))
-                  b["sort_order"] = b.get("sort_order", 50)
+                  b["lang"], b["category"], b["title"], b["sort_order"] = CURATED_MAP[bnum]
 
-              # مطابقة وتحميل صورة الغلاف من السيرفر الرسمي
-              local_cover = f"data/covers/{bnum}.jpg"
-              if not os.path.exists(local_cover) and api_books:
-                  nt = norm_match(b["title"])
-                  best_img = None
-                  for ab in api_books:
-                      aname = norm_match(ab.get("name", ""))
-                      if aname and (aname in nt or nt in aname or aname.split()[:3] == nt.split()[:3]):
-                          best_img = ab.get("image_url")
-                          if best_img and best_img != "0":
-                              break
-                  if best_img and best_img != "0":
-                      try:
-                          img_r = requests.get(best_img, timeout=12, verify=False)
-                          if img_r.status_code == 200 and len(img_r.content) > 1000:
-                              with open(local_cover, "wb") as imgf:
-                                  imgf.write(img_r.content)
-                      except Exception:
-                          pass
-              if os.path.exists(local_cover):
-                  b["cover"] = local_cover
-
-              # فتح ملف الكتاب لإصلاح تنسيقه الداخلي وبناء كشاف البحث والتأويل
               bfile = f"data/user_books/{bnum}.json"
               if os.path.exists(bfile):
                   try:
                       with open(bfile, "r", encoding="utf-8") as bf:
                           bdata = json.load(bf)
-                      bdata["title"] = b["title"]
-                      bdata["lang"] = b["lang"]
-                      bdata["category"] = b["category"]
                       is_qa = (bnum == 3)
-
-                      new_chapters = []
+                      new_chaps = []
                       for ch in bdata.get("chapters", []):
-                          ch_title = clean_book_name_str(ch.get("title", ""))
-                          fixed_html, plain_txt = clean_and_format_chapter_html(ch.get("html", ""), ch_title, is_qa)
-                          ch["title"] = ch_title
-                          ch["html"] = fixed_html
-                          new_chapters.append(ch)
+                          ch_t = ch.get("title", "")
+                          fixed_h, plain_t = clean_and_format_chapter_html(ch.get("html", ""), ch_t, is_qa)
+                          ch["html"] = fixed_h
+                          new_chaps.append(ch)
 
-                          # إضافة فقرات الفصل إلى محرك البحث الشامل (مثل Google)
-                          for para in plain_txt.split("."):
-                              p_clean = para.strip()
-                              if len(p_clean) > 25:
-                                  search_index.append({
-                                      "b": bnum,
-                                      "c": ch["idx"] - 1,
-                                      "l": b["lang"],
-                                      "t": p_clean[:260]
-                                  })
+                          for para in plain_t.split("."):
+                              pc = para.strip()
+                              if len(pc) > 25:
+                                  search_index.append({"b": bnum, "c": ch["idx"]-1, "l": b["lang"], "t": pc[:250]})
 
-                          # ربط كتب التأويل بزر التأويل في المصحف حسب اللغة
-                          if bnum in [28, 29, 30, 31, 32, 33, 34]:
+                          if bnum in [28, 29, 30, 31, 32, 33, 34, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90]:
                               for s_idx, s_name in enumerate(SURAH_NAMES_AR, 1):
-                                  if f"سورة {s_name}" in ch_title or f"سورة {s_name}" in plain_txt[:200]:
+                                  if f"سورة {s_name}" in ch_t or f"سورة {s_name}" in plain_t[:220]:
                                       prev = tafsir_db["ar"].get(str(s_idx), "")
-                                      if len(prev) < 6000:
-                                          tafsir_db["ar"][str(s_idx)] = (prev + f"\n\n<h4>من {b['title']} ({ch_title}):</h4>\n" + fixed_html)[:10000]
-                              if bnum == 28 and "2" not in tafsir_db["ar"]:
-                                  tafsir_db["ar"]["2"] = fixed_html[:8000]
+                                      if len(prev) < 8000:
+                                          tafsir_db["ar"][str(s_idx)] = (prev + f"\n<h4>{b['title']} ({ch_t}):</h4>\n" + fixed_h)[:12000]
 
-                      # ربط التأويل الفرنسي بالسور المحددة
-                      fr_surah_map = {73: [2], 61: [3], 80: [4], 78: [12], 77: [18], 79: [36], 74: list(range(67, 78)), 69: list(range(78, 115))}
-                      if bnum in fr_surah_map and new_chapters:
-                          combined_fr = "\n".join(f"<h4>{c['title']}</h4>\n{c['html']}" for c in new_chapters[:8])[:12000]
-                          for s_id in fr_surah_map[bnum]:
-                              tafsir_db["fr"][str(s_id)] = {"book_num": bnum, "book_title": b["title"], "html": combined_fr}
-
-                      # ربط التأويل الإنجليزي بالجزء 29 والجزء 30
-                      en_surah_map = {55: list(range(67, 78)), 54: list(range(78, 115))}
-                      if bnum in en_surah_map and new_chapters:
-                          combined_en = "\n".join(f"<h4>{c['title']}</h4>\n{c['html']}" for c in new_chapters[:8])[:12000]
-                          for s_id in en_surah_map[bnum]:
-                              tafsir_db["en"][str(s_id)] = {"book_num": bnum, "book_title": b["title"], "html": combined_en}
-
-                      bdata["chapters"] = new_chapters
-                      b["chapters_count"] = len(new_chapters)
+                      bdata["chapters"] = new_chaps
                       with open(bfile, "w", encoding="utf-8") as bf:
                           json.dump(bdata, bf, ensure_ascii=False)
                   except Exception:
@@ -488,22 +419,21 @@ jobs:
 
           with open(catalog_path, "w", encoding="utf-8") as f:
               json.dump(catalog_state, f, ensure_ascii=False, indent=2)
-
           with open("data/books_search_index.json", "w", encoding="utf-8") as f:
-              json.dump(search_index[:15000], f, ensure_ascii=False)
-
+              json.dump(search_index[:18000], f, ensure_ascii=False)
           with open("data/tawil_multilang.json", "w", encoding="utf-8") as f:
               json.dump(tafsir_db, f, ensure_ascii=False)
 
-          if new_books_report:
-              send_tg("✅ تم استلام وترقيم الملفات الجديدة التي أرسلتها:\n\n" + "\n".join(new_books_report) + "\n\nأرسل لي أرقامها لنضعها في أقسامها الصحيحة!")
-          else:
-              send_tg("✅ تم تنسيق جميع الكتب الـ 80، وإصلاح الأقواس المقطعة، وتلوين كتاب سؤال وجواب، وسحب الأغلفة، وبناء محرك البحث الشامل بنجاح!")
+          msg_summary = [f"🎉 اكتمل تحديث وتنسيق الكتب بنجاح! (إجمالي الكتب في التطبيق الآن: {len(books_list)} كتاباً)"]
+          if new_books_added:
+              msg_summary.append("\n📚 الكتب الجديدة التي تم سحبها ودمجها من رسائلك:")
+              msg_summary.extend(new_books_added)
+          send_tg("\n".join(msg_summary))
           EOF
 
-      - name: Commit Curated Books, Covers & Search Index
+      - name: Commit Updated Books & Tafsir Index
         run: |
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
           git add data/
-          git diff --staged --quiet || (git commit -m "Curate 80 books, fix formatting, fetch covers, build search & tafsir index" && git pull --rebase origin main && git push)
+          git diff --staged --quiet || (git commit -m "Add 13 new books (81-93), extract merged Tafsir & fix formatting" && git pull --rebase origin main && git push)
