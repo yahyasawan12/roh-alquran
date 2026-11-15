@@ -1,48 +1,62 @@
-name: Smart Media Indexer, EPUB Extractor & Audit Bot
+name: Instant Book & Audio Auto-Sorter and Audit
 
 on:
   push:
     paths:
       - '.github/workflows/setup.yml'
   workflow_dispatch:
-  schedule:
-    - cron: '*/10 * * * *'
+
+permissions:
+  contents: write
 
 jobs:
-  sync-and-audit:
+  sort-and-audit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python Dependencies
-        run: pip install requests beautifulsoup4 lxml
+      - name: Install Python Libraries
+        run: pip install requests beautifulsoup4 lxml urllib3
 
-      - name: Process Uploaded Books (EPUB/PDF), Audios & Generate Missing Report
+      - name: Process Sent Books, Auto-Fetch Audios & Send Audit Report
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           ADMIN_ID: "5205216077"
         run: |
           python3 - << 'EOF'
-          import os, re, io, json, hashlib, zipfile, xml.etree.ElementTree as ET
+          import os, re, io, json, hashlib, zipfile, urllib3
+          import xml.etree.ElementTree as ET
           import requests
           from bs4 import BeautifulSoup
+          urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           ADMIN_ID = str(os.environ.get("ADMIN_ID", "5205216077")).strip()
+
+          def send_tg(text):
+              for i in range(0, len(text), 3800):
+                  try:
+                      requests.post(
+                          f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                          json={"chat_id": ADMIN_ID, "text": text[i:i+3800]},
+                          timeout=20
+                      )
+                  except Exception:
+                      pass
+
+          send_tg("⏳ بدأ السيرفر الآن بفرز الكتب التي أرسلتها وفحص محتواها الداخلي وإعداد تقرير الجرد...")
 
           os.makedirs("data/books_content", exist_ok=True)
           os.makedirs("data/files/books", exist_ok=True)
           os.makedirs("data/files/audio", exist_ok=True)
 
-          # 1. قراءة الكتالوج الرسمي (95 كتاباً + 528 ملفاً صوتياً)
           with open("data/api_v1_books.json", "r", encoding="utf-8") as f:
               all_items = json.load(f).get("data", [])
 
           with open("data/api_v1_categories.json", "r", encoding="utf-8") as f:
               all_cats = json.load(f).get("data", [])
 
-          # 2. قراءة سجل الجرد المحفوظ لمنع التكرار وتتبع النواقص
           reg_path = "data/media_registry.json"
           if os.path.exists(reg_path):
               with open(reg_path, "r", encoding="utf-8") as f:
@@ -51,19 +65,11 @@ jobs:
               registry = {
                   "last_update_id": 0,
                   "active_cat_id": None,
-                  "file_hashes": {},      # sha256 -> item_id
-                  "tg_unique_ids": {},    # file_unique_id -> item_id
-                  "books_done": {},       # str(book_id) -> {"name": ..., "format": ..., "path": ..., "tg_file_id": ...}
-                  "audios_done": {}       # str(audio_id) -> {"name": ..., "path": ..., "tg_file_id": ...}
+                  "file_hashes": {},
+                  "tg_unique_ids": {},
+                  "books_done": {},
+                  "audios_done": {}
               }
-
-          def send_tg(text):
-              for i in range(0, len(text), 3900):
-                  requests.post(
-                      f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                      json={"chat_id": ADMIN_ID, "text": text[i:i+3900]},
-                      timeout=20
-                  )
 
           def norm_text(s):
               if not s: return ""
@@ -71,13 +77,15 @@ jobs:
               s = re.sub(r'[أإآٱ]', 'ا', s)
               s = re.sub(r'ة', 'ه', s)
               s = re.sub(r'ى', 'ي', s)
+              s = re.sub(r'\(\d+\)', '', s) # إزالة (1) و (2) التي يضيفها الجوال عند تكرار الاسم
               s = re.sub(r'\.(pdf|epub|mp3|m4a|wav|ogg|zip)$', '', s, flags=re.I)
               s = re.sub(r'[^\w\s]', ' ', s)
               return re.sub(r'\s+', ' ', s).strip().lower()
 
-          # دالة استخراج النص الكامل والفصول من ملف EPUB ليفتح داخل قارئ التطبيق بسرعة البرق
-          def extract_epub_to_html(epub_bytes):
+          # استخراج نص الـ EPUB + قراءة العنوان الحقيقي من داخل الكتاب نفسه
+          def parse_epub_bytes(epub_bytes):
               chapters_html = []
+              internal_title = ""
               try:
                   with zipfile.ZipFile(io.BytesIO(epub_bytes), 'r') as z:
                       opf_path = None
@@ -100,7 +108,9 @@ jobs:
                           manifest = {}
                           spine_ids = []
                           for elem in opf_root.iter():
-                              if elem.tag.endswith('item') and 'id' in elem.attrib and 'href' in elem.attrib:
+                              if elem.tag.endswith('title') and elem.text and not internal_title:
+                                  internal_title = elem.text.strip()
+                              elif elem.tag.endswith('item') and 'id' in elem.attrib and 'href' in elem.attrib:
                                   manifest[elem.attrib['id']] = elem.attrib['href']
                               elif elem.tag.endswith('itemref') and 'idref' in elem.attrib:
                                   spine_ids.append(elem.attrib['idref'])
@@ -117,217 +127,169 @@ jobs:
                       for hf in html_files:
                           raw_html = z.read(hf).decode('utf-8', errors='ignore')
                           soup = BeautifulSoup(raw_html, 'lxml')
+                          if not internal_title and soup.title and soup.title.string:
+                              internal_title = soup.title.string.strip()
                           for tag in soup(['script', 'style', 'head', 'nav']):
                               tag.decompose()
                           body = soup.body or soup
                           txt = body.get_text(separator='\n', strip=True)
-                          if len(txt) > 20:
+                          if len(txt) > 15:
                               clean_p = "".join(f"<p>{line.strip()}</p>" for line in txt.split('\n') if line.strip())
                               chapters_html.append(clean_p)
-              except Exception as e:
-                  return None
-              return "\n<hr>\n".join(chapters_html) if chapters_html else None
+              except Exception:
+                  pass
+              full_html = "\n<hr>\n".join(chapters_html) if chapters_html else None
+              return full_html, internal_title
 
-          # دالة مطابقة الكتاب أو الملف الصوتي مع موقعه الصحيح في api_v1_books.json
-          def match_item(file_name, caption, is_audio_file, active_cat_id):
-              search_label = f"{caption} {file_name}".strip()
-              n_label = norm_text(search_label)
-              n_fname = norm_text(file_name)
-
-              # 1) فحص إذا كتب المستخدم رقم الـ ID صراحة مثل #666 أو id:666
-              id_match = re.search(r'#?(\d{2,4})\b', caption or "")
-              if id_match:
-                  cand_id = int(id_match.group(1))
-                  for it in all_items:
-                      if int(it.get("id", 0)) == cand_id:
-                          return it
-
-              # 2) إذا كان ملفاً صوتياً
-              if is_audio_file:
-                  audio_candidates = [it for it in all_items if it.get("is_audio")]
-                  if active_cat_id:
-                      cat_audios = [it for it in audio_candidates if int(it.get("cat_id", 0)) == int(active_cat_id)]
-                      if cat_audios:
-                          audio_candidates = cat_audios
-
-                  # مطابقة باسم الملف الأصلي في السيرفر (مثل 06.mp3)
-                  for it in audio_candidates:
-                      srv_fname = (it.get("file_name") or "").strip().lower()
-                      if srv_fname and srv_fname == (file_name or "").strip().lower():
-                          if str(it["id"]) not in registry["audios_done"] or active_cat_id:
-                              return it
-
-                  # مطابقة برقم الدرس داخل اسم الملف (مثل 01.mp3 -> الدرس الأول في القسم المحدد)
-                  num_in_file = re.search(r'(\d{1,3})', file_name or "")
-                  if num_in_file and active_cat_id:
-                      num_val = int(num_in_file.group(1))
-                      for it in audio_candidates:
-                          srv_num = re.search(r'(\d{1,3})', it.get("file_name") or it.get("title") or "")
-                          if srv_num and int(srv_num.group(1)) == num_val:
-                              return it
-
-                  # مطابقة بعنوان الدرس الصوتي
-                  for it in audio_candidates:
-                      n_title = norm_text(it.get("title") or it.get("name") or "")
-                      if n_title and (n_title in n_label or n_fname in n_title) and len(n_fname) >= 3:
-                          return it
-                  return None
-
-              # 3) إذا كان كتاباً نصياً (EPUB / PDF)
+          def find_best_book_match(file_name, caption, internal_title=""):
               text_candidates = [it for it in all_items if not it.get("is_audio")]
-              best_match = None
-              best_score = 0
-              for it in text_candidates:
-                  b_name = norm_text(it.get("name") or "")
-                  if not b_name:
+
+              # 1. إذا وُجد رقم الكتاب صراحة في الوصف أو الاسم
+              for src in [caption, file_name]:
+                  m = re.search(r'#(\d{2,4})\b', src or "")
+                  if m:
+                      cid = int(m.group(1))
+                      for it in text_candidates:
+                          if int(it["id"]) == cid:
+                              return it
+
+              # 2. مطابقة عبر العنوان الداخلي للـ EPUB أو اسم الملف أو الوصف
+              for candidate_label in [internal_title, caption, file_name]:
+                  nl = norm_text(candidate_label)
+                  if not nl or len(nl) < 3:
                       continue
-                  if b_name == n_fname or b_name == norm_text(caption):
-                      return it
-                  if b_name in n_label or (len(n_fname) >= 4 and n_fname in b_name):
-                      score = len(b_name)
-                      if score > best_score:
-                          best_score = score
-                          best_match = it
-              return best_match
+                  best = None
+                  best_len = 0
+                  for it in text_candidates:
+                      bname = norm_text(it.get("name") or "")
+                      if not bname:
+                          continue
+                      if bname == nl:
+                          return it
+                      if bname in nl or nl in bname:
+                          if len(bname) > best_len:
+                              best_len = len(bname)
+                              best = it
+                  if best:
+                      return best
+              return None
 
-          # 3. جلب الرسائل والملفات الجديدة من القناة أو محادثة البوت
-          offset = registry.get("last_update_id", 0) + 1
-          up_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?offset={offset}&limit=100", timeout=25).json()
-          updates = up_res.get("result", [])
-
+          # سحب كل الرسائل المتراكمة من البوت والقناة على دفعات (حتى لو كانت أكثر من 100 رسالة)
           newly_added_books = []
-          newly_added_audios = []
           duplicates_skipped = []
           unmatched_files = []
-          audit_requested = False
 
-          for u in updates:
-              registry["last_update_id"] = u["update_id"]
-              msg = u.get("message") or u.get("channel_post") or {}
-              text = (msg.get("text") or "").strip()
-              caption = (msg.get("caption") or "").strip()
+          while True:
+              offset = registry.get("last_update_id", 0) + 1
+              up_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?offset={offset}&limit=100", timeout=25).json()
+              updates = up_res.get("result", [])
+              if not updates:
+                  break
 
-              # فحص أوامر تحديد القسم للصوتيات مثل: #قسم 102 أو #قسم تأويل جزء عم
-              cmd_text = text or caption
-              if cmd_text.startswith("#قسم") or cmd_text.startswith("/cat"):
-                  q_cat = cmd_text.replace("#قسم", "").replace("/cat", "").strip()
-                  if q_cat.isdigit():
-                      registry["active_cat_id"] = int(q_cat)
-                      send_tg(f"📌 تم تفعيل القسم رقم ({q_cat})؛ أي ملفات صوتية ترسلها الآن ستنزل في هذا القسم تلقائياً.")
-                  else:
-                      nq = norm_text(q_cat)
-                      for c in all_cats:
-                          if nq in norm_text(c.get("name", "")):
-                              registry["active_cat_id"] = int(c["id"])
-                              send_tg(f"📌 تم تفعيل قسم: «{c.get('name')}» (رقم {c['id']}) لاستقبال الدفعة الحالية.")
-                              break
+              for u in updates:
+                  registry["last_update_id"] = u["update_id"]
+                  msg = u.get("message") or u.get("channel_post") or {}
+                  caption = (msg.get("caption") or "").strip()
+                  doc = msg.get("document")
+                  if not doc:
+                      continue
 
-              if text in ["/جرد", "/missing", "/status", "جرد"]:
-                  audit_requested = True
-                  continue
+                  f_id = doc.get("file_id")
+                  f_uniq = doc.get("file_unique_id")
+                  f_name = doc.get("file_name") or "book"
+                  f_size = doc.get("file_size", 0)
 
-              # استخراج المرفق (Document أو Audio)
-              doc = msg.get("document") or msg.get("audio")
-              if not doc:
-                  continue
+                  if f_uniq in registry["tg_unique_ids"]:
+                      duplicates_skipped.append(f_name)
+                      continue
 
-              f_id = doc.get("file_id")
-              f_uniq = doc.get("file_unique_id")
-              f_name = doc.get("file_name") or (doc.get("title") or "file")
-              mime = (doc.get("mime_type") or "").lower()
-              f_size = doc.get("file_size", 0)
+                  if not any(f_name.lower().endswith(ext) for ext in [".epub", ".pdf"]):
+                      continue
 
-              # فحص التكرار السريع عبر file_unique_id
-              if f_uniq in registry["tg_unique_ids"]:
-                  prev_id = registry["tg_unique_ids"][f_uniq]
-                  duplicates_skipped.append(f"{f_name} (مربوط مسبقاً بالمعرف #{prev_id})")
-                  continue
-
-              is_audio = any(ext in f_name.lower() for ext in [".mp3", ".m4a", ".wav", ".ogg"]) or "audio" in mime
-              matched = match_item(f_name, caption, is_audio, registry.get("active_cat_id"))
-
-              if not matched:
-                  unmatched_files.append(f"{f_name} (الوصف: {caption or 'بدون وصف'})")
-                  continue
-
-              item_id = str(matched["id"])
-
-              # إذا كان الملف أقل من 20MB نسحبه للسيرفر لفحص بصمة SHA-256 واستخراج نص الـ EPUB
-              if f_size < 19900000:
-                  f_info = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={f_id}", timeout=20).json()
-                  f_path_tg = (f_info.get("result") or {}).get("file_path")
-                  if f_path_tg:
-                      raw_bytes = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{f_path_tg}", timeout=40).content
+                  if f_size < 19900000:
+                      f_info = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={f_id}", timeout=20).json()
+                      f_path_tg = (f_info.get("result") or {}).get("file_path")
+                      if not f_path_tg:
+                          continue
+                      raw_bytes = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{f_path_tg}", timeout=45).content
                       sha256_hash = hashlib.sha256(raw_bytes).hexdigest()
 
                       if sha256_hash in registry["file_hashes"]:
-                          duplicates_skipped.append(f"{f_name} (بصمة مطابقة للملف #{registry['file_hashes'][sha256_hash]})")
+                          duplicates_skipped.append(f"{f_name} (مكرر)")
                           continue
 
+                      extracted_html, internal_title = (None, "")
+                      if f_name.lower().endswith(".epub"):
+                          extracted_html, internal_title = parse_epub_bytes(raw_bytes)
+
+                      matched = find_best_book_match(f_name, caption, internal_title)
+                      if not matched:
+                          unmatched_files.append(f"{f_name} {f'({internal_title})' if internal_title else ''}")
+                          continue
+
+                      item_id = str(matched["id"])
                       registry["file_hashes"][sha256_hash] = item_id
                       registry["tg_unique_ids"][f_uniq] = item_id
 
-                      if not is_audio:
-                          ext = ".epub" if f_name.lower().endswith(".epub") else ".pdf"
-                          local_save_path = f"data/files/books/{item_id}{ext}"
-                          with open(local_save_path, "wb") as lf:
-                              lf.write(raw_bytes)
+                      ext = ".epub" if f_name.lower().endswith(".epub") else ".pdf"
+                      local_save_path = f"data/files/books/{item_id}{ext}"
+                      with open(local_save_path, "wb") as lf:
+                          lf.write(raw_bytes)
 
-                          # إذا كان EPUB نستخرج نصوصه وفصوله ليفتح داخل قارئ التطبيق فوراً
-                          extracted_html = None
-                          if ext == ".epub":
-                              extracted_html = extract_epub_to_html(raw_bytes)
-                              if extracted_html:
-                                  with open(f"data/books_content/{item_id}.json", "w", encoding="utf-8") as cf:
-                                      json.dump({
-                                          "id": int(item_id),
-                                          "name": matched.get("name"),
-                                          "html": extracted_html
-                                      }, cf, ensure_ascii=False)
+                      if extracted_html:
+                          with open(f"data/books_content/{item_id}.json", "w", encoding="utf-8") as cf:
+                              json.dump({
+                                  "id": int(item_id),
+                                  "name": matched.get("name"),
+                                  "html": extracted_html
+                              }, cf, ensure_ascii=False)
 
-                          registry["books_done"][item_id] = {
-                              "id": int(item_id),
-                              "name": matched.get("name"),
-                              "format": ext.replace(".", ""),
-                              "has_extracted_text": bool(extracted_html),
-                              "local_path": local_save_path,
-                              "tg_file_id": f_id
-                          }
-                          newly_added_books.append(f"📗 {matched.get('name')} (#{item_id} - {ext.upper()})")
-                      else:
-                          local_audio_path = f"data/files/audio/{item_id}.mp3"
-                          with open(local_audio_path, "wb") as af:
-                              af.write(raw_bytes)
-                          registry["audios_done"][item_id] = {
-                              "id": int(item_id),
-                              "name": matched.get("title") or matched.get("name"),
-                              "local_path": local_audio_path,
-                              "tg_file_id": f_id
-                          }
-                          newly_added_audios.append(f"🎧 {matched.get('title') or matched.get('name')} (#{item_id})")
-              else:
-                  # للملفات الضخمة (>20MB) نحفظ معرفها في السجل مباشرة
-                  registry["tg_unique_ids"][f_uniq] = item_id
-                  if not is_audio:
                       registry["books_done"][item_id] = {
                           "id": int(item_id),
                           "name": matched.get("name"),
-                          "format": "pdf_large",
+                          "format": ext.replace(".", ""),
+                          "has_extracted_text": bool(extracted_html),
+                          "local_path": local_save_path,
                           "tg_file_id": f_id
                       }
-                      newly_added_books.append(f"📗 {matched.get('name')} (#{item_id} - ملف كبير)")
-                  else:
-                      registry["audios_done"][item_id] = {
-                          "id": int(item_id),
-                          "name": matched.get("title") or matched.get("name"),
-                          "tg_file_id": f_id
-                      }
-                      newly_added_audios.append(f"🎧 {matched.get('title') or matched.get('name')} (#{item_id})")
+                      newly_added_books.append(f"📗 {matched.get('name')} (#{item_id} - {ext.upper()})")
 
-          # 4. حساب تقرير النواقص الشامل (Missing Files Audit)
-          all_text_books = [it for it in all_items if not it.get("is_audio")]
+          # فحص وسحب دفعة من الصوتيات آلياً من السيرفر الأصلي بالترتيب الصحيح دون خربطة الأسماء
           all_audio_items = [it for it in all_items if it.get("is_audio")]
+          auto_fetched_audios = 0
+          for it in all_audio_items:
+              aid = str(it["id"])
+              if aid in registry["audios_done"]:
+                  continue
+              raw_url = (it.get("url") or "").strip()
+              if not raw_url or raw_url == "0":
+                  continue
+              # سحب أول 15 ملف صوتي في كل تشغيلة لمنع بطء السيرفر
+              if auto_fetched_audios >= 15:
+                  break
+              test_urls = [
+                  raw_url.replace("http://alamin-library.com", "https://new.alamin-library.com"),
+                  raw_url
+              ]
+              for turl in test_urls:
+                  try:
+                      r = requests.get(turl, timeout=12, verify=False)
+                      if r.status_code == 200 and len(r.content) > 10000 and b"<!DOCTYPE" not in r.content[:200]:
+                          save_p = f"data/files/audio/{aid}.mp3"
+                          with open(save_p, "wb") as af:
+                              af.write(r.content)
+                          registry["audios_done"][aid] = {
+                              "id": int(aid),
+                              "name": it.get("title") or it.get("name"),
+                              "category": (it.get("category") or {}).get("name", ""),
+                              "local_path": save_p
+                          }
+                          auto_fetched_audios += 1
+                          break
+                  except Exception:
+                      pass
 
+          all_text_books = [it for it in all_items if not it.get("is_audio")]
           missing_books = [
               {
                   "id": it["id"],
@@ -338,65 +300,52 @@ jobs:
               for it in all_text_books if str(it["id"]) not in registry["books_done"]
           ]
 
-          missing_audios_by_cat = {}
-          for it in all_audio_items:
-              if str(it["id"]) not in registry["audios_done"]:
-                  cname = f"{(it.get('category') or {}).get('name', 'قسم صوتي')} (#قسم {it.get('cat_id')})"
-                  missing_audios_by_cat[cname] = missing_audios_by_cat.get(cname, 0) + 1
-
-          audit_data = {
-              "total_books_target": len(all_text_books),
-              "books_completed_count": len(registry["books_done"]),
-              "books_missing_count": len(missing_books),
-              "total_audios_target": len(all_audio_items),
-              "audios_completed_count": len(registry["audios_done"]),
-              "audios_missing_count": len(all_audio_items) - len(registry["audios_done"]),
-              "missing_books_list": missing_books,
-              "missing_audios_by_category": missing_audios_by_cat
-          }
-
           with open(reg_path, "w", encoding="utf-8") as f:
               json.dump(registry, f, ensure_ascii=False, indent=2)
 
           with open("data/audit_report.json", "w", encoding="utf-8") as f:
-              json.dump(audit_data, f, ensure_ascii=False, indent=2)
+              json.dump({
+                  "books_completed": len(registry["books_done"]),
+                  "books_total": len(all_text_books),
+                  "audios_completed": len(registry["audios_done"]),
+                  "audios_total": len(all_audio_items),
+                  "unmatched_files": unmatched_files,
+                  "missing_books": missing_books
+              }, f, ensure_ascii=False, indent=2)
 
-          # 5. إرسال تقرير التحديث والنواقص إلى تيليجرام إذا تم رفع ملفات جديدة أو طلب الجرد
-          if newly_added_books or newly_added_audios or duplicates_skipped or unmatched_files or audit_requested:
-              msg_lines = ["📊 تقرير المحرك الذكي لفرز وجرد الملفات:\n"]
-              if newly_added_books:
-                  msg_lines.append(f"✅ كتب تم ربطها واستخراجها الآن ({len(newly_added_books)}):")
-                  msg_lines.extend(newly_added_books[:20])
-                  msg_lines.append("")
-              if newly_added_audios:
-                  msg_lines.append(f"✅ صوتيات تم ربطها الآن ({len(newly_added_audios)}):")
-                  msg_lines.extend(newly_added_audios[:15])
-                  msg_lines.append("")
-              if duplicates_skipped:
-                  msg_lines.append(f"♻️ ملفات مكررة تم تجاهلها تلقائياً ({len(duplicates_skipped)}):")
-                  msg_lines.extend(duplicates_skipped[:10])
-                  msg_lines.append("")
-              if unmatched_files:
-                  msg_lines.append(f"⚠️ ملفات لم يُعرف اسمها (أعد إرسالها مع كتابة اسم الكتاب في الوصف):")
-                  msg_lines.extend(unmatched_files[:10])
-                  msg_lines.append("")
+          # إرسال تقرير الجرد الشامل إلى تيليجرام فوراً
+          report_lines = [
+              "✅ اكتمل الفرز الذكي والجرد الفوري!\n",
+              f"📚 الكتب الجاهزة في التطبيق الآن: ({len(registry['books_done'])}) من أصل ({len(all_text_books)}) كتاباً.",
+              f"🎧 الصوتيات المفروزة برمجياً: ({len(registry['audios_done'])}) من أصل ({len(all_audio_items)}) درساً.\n"
+          ]
 
-              msg_lines.append(f"📈 حالة الإنجاز الإجمالية:")
-              msg_lines.append(f"• الكتب المكتملة: {len(registry['books_done'])} من أصل {len(all_text_books)}")
-              msg_lines.append(f"• الصوتيات المكتملة: {len(registry['audios_done'])} من أصل {len(all_audio_items)}\n")
+          if newly_added_books:
+              report_lines.append(f"🎉 كتب تمت إضافتها وتجهيزها للقراءة في هذه الدفعة ({len(newly_added_books)}):")
+              report_lines.extend(newly_added_books[:30])
+              report_lines.append("")
 
-              if missing_books:
-                  msg_lines.append(f"🔍 أول 15 كتاباً ناقصاً لم ترسله بعد:")
-                  for mb in missing_books[:15]:
-                      msg_lines.append(f"  - [#{mb['id']}] {mb['name']} ({mb['lang'].upper()} - {mb['category']})")
+          if duplicates_skipped:
+              report_lines.append(f"♻️ ملفات مكررة تم تجاهلها تلقائياً ({len(duplicates_skipped)}): " + "، ".join(duplicates_skipped[:10]) + "\n")
 
-              send_tg("\n".join(msg_lines))
+          if unmatched_files:
+              report_lines.append("⚠️ ملفات لم يُطابق اسمها تلقائياً (أرسلها مع رقم الكتاب في الوصف):")
+              report_lines.extend([f"  - {x}" for x in unmatched_files[:15]])
+              report_lines.append("")
+
+          if missing_books:
+              report_lines.append(f"📋 الكتب المتبقية التي لم تصل بعد ({len(missing_books)} كتاباً):")
+              for mb in missing_books[:35]:
+                  report_lines.append(f"  • [#{mb['id']}] {mb['name']} ({mb['lang'].upper()})")
+          else:
+              report_lines.append("🏆 ما شاء الله! اكتملت جميع الكتب الـ 95 في التطبيق بنسبة 100%!")
+
+          send_tg("\n".join(report_lines))
           EOF
 
-      - name: Commit Extracted Books, Audios & Audit Report
+      - name: Save Sorted Books & Registry to Repository
         run: |
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
           git add data/
-          git diff --staged --quiet || git commit -m "Auto-index uploaded EPUB/PDF/MP3 files and update audit report"
-          git push
+          git diff --staged --quiet || (git commit -m "Auto-sort sent books and update audit registry" && git pull --rebase origin main && git push)
