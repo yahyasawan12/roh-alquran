@@ -1,0 +1,600 @@
+{
+  "total_books_target": 95,
+  "books_completed_count": 0,
+  "books_missing_count": 95,
+  "total_audios_target": 528,
+  "audios_completed_count": 0,
+  "audios_missing_count": 528,
+  "missing_books_list": [
+    {
+      "id": 666,
+      "name": "زيارة الرسول ﷺ",
+      "lang": "ar",
+      "category": "الأنبياء الكرام"
+    },
+    {
+      "id": 667,
+      "name": "Zakat \"Alms giving\"",
+      "lang": "en",
+      "category": "Pillars of Islam"
+    },
+    {
+      "id": 668,
+      "name": "Interpretation of the Thirtieth Part of the Holy Qur'an",
+      "lang": "en",
+      "category": "Interpretation of the Holy Qur’an"
+    },
+    {
+      "id": 669,
+      "name": "Interprétation de la Partie Amma (Partie 30)",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 670,
+      "name": "La Foi",
+      "lang": "fr",
+      "category": "Les piliers de l'Islam"
+    },
+    {
+      "id": 671,
+      "name": "Le Bonheur",
+      "lang": "fr",
+      "category": "Études scientifiques"
+    },
+    {
+      "id": 672,
+      "name": "Les Pages de la Gloire Immortelle",
+      "lang": "fr",
+      "category": "Les Pages de la Gloire Immortelle"
+    },
+    {
+      "id": 673,
+      "name": "Pourquoi la Polygamie et le Divorce et le Voile en Islam?",
+      "lang": "fr",
+      "category": "Études islamiques"
+    },
+    {
+      "id": 674,
+      "name": "Islam!… What are the Veil, Divorce, and Polygamy for?",
+      "lang": "en",
+      "category": "Islamic Studies"
+    },
+    {
+      "id": 675,
+      "name": "الإيمان - أَوَّل المَدَارِس العُليَا لِلتَّقوى",
+      "lang": "ar",
+      "category": "درر الأحكام"
+    },
+    {
+      "id": 676,
+      "name": "الصلاة - ثاني المَدَارِس العُليَا لِلتَّقوى",
+      "lang": "ar",
+      "category": "درر الأحكام"
+    },
+    {
+      "id": 677,
+      "name": "الزكاة - ثالث المَدَارِس العُليَا لِلتَّقوى",
+      "lang": "ar",
+      "category": "درر الأحكام"
+    },
+    {
+      "id": 678,
+      "name": "الصيام - رابع المَدَارِس العُليَا لِلتَّقوى",
+      "lang": "ar",
+      "category": "درر الأحكام"
+    },
+    {
+      "id": 679,
+      "name": "الحج - خامس المَدَارِس العُليَا لِلتَّقوى",
+      "lang": "ar",
+      "category": "درر الأحكام"
+    },
+    {
+      "id": 680,
+      "name": "عصمة الأنبياء الكرام عليهم السلام",
+      "lang": "ar",
+      "category": "الأنبياء الكرام"
+    },
+    {
+      "id": 681,
+      "name": "حقيقة سيدنا محمد ﷺ \"تظهر في القرن العشرين\"",
+      "lang": "ar",
+      "category": "الأنبياء الكرام"
+    },
+    {
+      "id": 682,
+      "name": "لِمَ الحجاب، ولِمَ الطلاق، ولِمَ أكثر من زوجة يا إسلام؟!",
+      "lang": "ar",
+      "category": "دراسات إسلامية"
+    },
+    {
+      "id": 683,
+      "name": "البحوث المجيدة",
+      "lang": "ar",
+      "category": "دراسات إسلامية"
+    },
+    {
+      "id": 684,
+      "name": "الغرب حرّر الإنسان من العبودية والإسلام لمَ لم يحرّره؟",
+      "lang": "ar",
+      "category": "دراسات إسلامية"
+    },
+    {
+      "id": 685,
+      "name": "صواعق معجزات أم الكتاب",
+      "lang": "ar",
+      "category": "دراسات إسلامية"
+    },
+    {
+      "id": 686,
+      "name": "الحقيقة الرهيبة للسموات السبع والأيام الستة",
+      "lang": "ar",
+      "category": "دراسات علمية"
+    },
+    {
+      "id": 687,
+      "name": "نظرات في صحائف العلامة الإنساني محمد أمين شيخو قدس الله سره",
+      "lang": "ar",
+      "category": "دراسات إسلامية"
+    },
+    {
+      "id": 688,
+      "name": "Fasting",
+      "lang": "en",
+      "category": "Pillars of Islam"
+    },
+    {
+      "id": 761,
+      "name": "Is happiness really beyond reach?!",
+      "lang": "en",
+      "category": "Islamic Studies"
+    },
+    {
+      "id": 762,
+      "name": "The Origin of Creation",
+      "lang": "en",
+      "category": "Islamic Studies"
+    },
+    {
+      "id": 763,
+      "name": "Les sept cieux et l’impressionnante réalité des six jours de la création",
+      "lang": "fr",
+      "category": "Études islamiques"
+    },
+    {
+      "id": 764,
+      "name": "La visite du Prophète Mohammad (Pbsl)",
+      "lang": "fr",
+      "category": "Études islamiques"
+    },
+    {
+      "id": 767,
+      "name": "تأويل القرآن العظيم - المجلّد الأول",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 778,
+      "name": "سؤال وجواب",
+      "lang": "ar",
+      "category": "سؤال و جواب"
+    },
+    {
+      "id": 779,
+      "name": "السيد المسيح عليه السلام رسول السلام يلوح بالأفق",
+      "lang": "ar",
+      "category": "الأنبياء الكرام"
+    },
+    {
+      "id": 780,
+      "name": "كشف خفايا علوم السحرة",
+      "lang": "ar",
+      "category": "دراسات إسلامية"
+    },
+    {
+      "id": 781,
+      "name": "صفحات من المجد الخالد",
+      "lang": "ar",
+      "category": "سيرة حياة العلّامة"
+    },
+    {
+      "id": 783,
+      "name": "La vérité de la prière (As-Salât)",
+      "lang": "fr",
+      "category": "Les piliers de l'Islam"
+    },
+    {
+      "id": 784,
+      "name": "L'aumône (Al-Zakat)",
+      "lang": "fr",
+      "category": "Les piliers de l'Islam"
+    },
+    {
+      "id": 785,
+      "name": "Le pèlerinage (Al-Hajj)",
+      "lang": "fr",
+      "category": "Les piliers de l'Islam"
+    },
+    {
+      "id": 786,
+      "name": "Le Monde Pré-Matériel",
+      "lang": "fr",
+      "category": "Études islamiques"
+    },
+    {
+      "id": 787,
+      "name": "Interprétation De La Partie 29, Juz’ Tabarak",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 788,
+      "name": "L'Envoyé De La Paix Se Profile A L'horizon",
+      "lang": "fr",
+      "category": "Études islamiques"
+    },
+    {
+      "id": 789,
+      "name": "Interprétation de la Sourate Al-Baqara",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 790,
+      "name": "Interprétation de la Sourate Prophète Joseph",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 791,
+      "name": "Interprétation de la Sourate Al-Kahf",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 792,
+      "name": "Les Origines Des Eaux De Source Dans Le Monde",
+      "lang": "fr",
+      "category": "Études scientifiques"
+    },
+    {
+      "id": 793,
+      "name": "Proclamer L'amour De Dieu",
+      "lang": "fr",
+      "category": "Études scientifiques"
+    },
+    {
+      "id": 794,
+      "name": "Dévoiler les secrets de la magie et des magiciens",
+      "lang": "fr",
+      "category": "Études islamiques"
+    },
+    {
+      "id": 795,
+      "name": "Les Miracles De La Medecine Prophetique",
+      "lang": "fr",
+      "category": "Études scientifiques"
+    },
+    {
+      "id": 796,
+      "name": "Faits de psychologie et de sociologie",
+      "lang": "fr",
+      "category": "Programmes Pédagogique"
+    },
+    {
+      "id": 797,
+      "name": "Education islamique de la jeunesse. «Niveau 3»",
+      "lang": "fr",
+      "category": "Programmes Pédagogique"
+    },
+    {
+      "id": 798,
+      "name": "Éducation islamique pour la jeunesse - Niveau 2",
+      "lang": "fr",
+      "category": "Programmes Pédagogique"
+    },
+    {
+      "id": 799,
+      "name": "Cupping",
+      "lang": "en",
+      "category": "Scientific Studies"
+    },
+    {
+      "id": 800,
+      "name": "Proclaiming God’s Love",
+      "lang": "en",
+      "category": "Scientific Studies"
+    },
+    {
+      "id": 801,
+      "name": "الحجامة",
+      "lang": "ar",
+      "category": "دراسات علمية"
+    },
+    {
+      "id": 802,
+      "name": "اللهُ أَكبَر (رفقاً بالحيوان)",
+      "lang": "ar",
+      "category": "دراسات علمية"
+    },
+    {
+      "id": 803,
+      "name": "وداعاً لطبيب المقوقس",
+      "lang": "ar",
+      "category": "دراسات علمية"
+    },
+    {
+      "id": 804,
+      "name": "التربية الإسلامية للناشئة - المستوى الأول",
+      "lang": "ar",
+      "category": "المناهج التعليمية"
+    },
+    {
+      "id": 805,
+      "name": "التربية الإسلامية للناشئة - المستوى الثاني",
+      "lang": "ar",
+      "category": "المناهج التعليمية"
+    },
+    {
+      "id": 806,
+      "name": "التربية الإسلامية للناشئة - المستوى الثالث",
+      "lang": "ar",
+      "category": "المناهج التعليمية"
+    },
+    {
+      "id": 807,
+      "name": "التربية الإسلامية للناشئة - المستوى الرابع",
+      "lang": "ar",
+      "category": "المناهج التعليمية"
+    },
+    {
+      "id": 808,
+      "name": "حقائق علم النفس والاجتماع",
+      "lang": "ar",
+      "category": "المناهج التعليمية"
+    },
+    {
+      "id": 809,
+      "name": "مصادر مياه الينابيع في العالم",
+      "lang": "ar",
+      "category": "دراسات علمية"
+    },
+    {
+      "id": 810,
+      "name": "Islamic Education for Youths-Level One",
+      "lang": "en",
+      "category": "Educational Programs"
+    },
+    {
+      "id": 811,
+      "name": "Pilgrimage \"Hajj\"",
+      "lang": "en",
+      "category": "Pillars of Islam"
+    },
+    {
+      "id": 812,
+      "name": "Islamic Education for Youths-Level Two",
+      "lang": "en",
+      "category": "Educational Programs"
+    },
+    {
+      "id": 813,
+      "name": "Islamic Education for Youths-Level Three",
+      "lang": "en",
+      "category": "Educational Programs"
+    },
+    {
+      "id": 814,
+      "name": "Interprétation de la Sourate Al-Imrân",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 815,
+      "name": "The Envoy of Peace Looms on the Horizon",
+      "lang": "en",
+      "category": "Islamic Studies"
+    },
+    {
+      "id": 816,
+      "name": "Education islamique de la jeunesse. «Niveau 1»",
+      "lang": "fr",
+      "category": "Programmes Pédagogique"
+    },
+    {
+      "id": 817,
+      "name": "The Sources of Spring Water in the World",
+      "lang": "en",
+      "category": "Scientific Studies"
+    },
+    {
+      "id": 819,
+      "name": "Interpretation of the Twenty-ninth Section of the Holy Qur’an",
+      "lang": "en",
+      "category": "Interpretation of the Holy Qur’an"
+    },
+    {
+      "id": 820,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part One",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 821,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Two",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 822,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Three",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 823,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Four",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 824,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Five",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 825,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Six",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 826,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Seven",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 827,
+      "name": "Stories of the Scholar Mohammad Amin Sheikho - Part Eight",
+      "lang": "en",
+      "category": "Stories of the Scholar Mohammad Amin Sheikho"
+    },
+    {
+      "id": 828,
+      "name": "Facts of Psychology ‎and Sociology",
+      "lang": "en",
+      "category": "Educational Programs"
+    },
+    {
+      "id": 829,
+      "name": "Unveiling The Secrets of Magic and Magicians",
+      "lang": "en",
+      "category": "Islamic Studies"
+    },
+    {
+      "id": 830,
+      "name": "Interprétation de la sourate An-Nissâ",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 831,
+      "name": "Interprétation de la sourate Yâ-Sîne",
+      "lang": "fr",
+      "category": "Interprétation du Saint Coran"
+    },
+    {
+      "id": 768,
+      "name": "تأويل القرآن العظيم - المجلّد الثاني",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 769,
+      "name": "تأويل القرآن العظيم - المجلّد الثالث",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 770,
+      "name": "تأويل القرآن العظيم - المجلّد الرابع",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 771,
+      "name": "تأويل القرآن العظيم - المجلّد الخامس",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 772,
+      "name": "تأويل القرآن العظيم - المجلّد السادس",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 773,
+      "name": "تأويل القرآن العظيم - المجلّد السابع (جزء قد سمع)",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 774,
+      "name": "تأويل القرآن العظيم - المجلّد الثامن",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 775,
+      "name": "تأويل القرآن العظيم - المجلّد التاسع (جزء عمّ)",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 766,
+      "name": "موسوعة عمّ",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 20,
+      "name": "تأويل سورة الفيل",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 663,
+      "name": "تأويل سورة قريش",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 664,
+      "name": "تأويل سورة الماعون",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 665,
+      "name": "تأويل سورة الهمزة",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 776,
+      "name": "تأويل الأمين للقرآن العظيم",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    },
+    {
+      "id": 777,
+      "name": "أسرار السبع المثاني وحقائقها",
+      "lang": "ar",
+      "category": "تأويل القرآن العظيم"
+    }
+  ],
+  "missing_audios_by_category": {
+    "تأويل جزء عم (#قسم 102)": 39,
+    "حقيقة سيدنا محمد ﷺ (#قسم 103)": 14,
+    "السيد المسيح عليه السلام يلوح بالأفق (#قسم 104)": 29,
+    "درر الأحكام (#قسم 141)": 19,
+    "الحجامة (#قسم 112)": 11,
+    "عصمة الأنبياء (#قسم 114)": 26,
+    "أسرار السبع المثاني وحقائقها (#قسم 115)": 19,
+    "Islam!… What are the Veil, Divorce, and Polygamy for? (#قسم 130)": 26,
+    "Pilgrimage (Hajj) (#قسم 142)": 27,
+    "The Sources of Spring Water in the World (#قسم 143)": 19,
+    "تأويل القرآن العظيم - المجلد الأول (#قسم 156)": 42,
+    "تأويل القرآن العظيم - المجلد الثاني (#قسم 157)": 39,
+    "تأويل القرآن العظيم - المجلد الثالث (#قسم 158)": 33,
+    "تأويل القرآن العظيم - المجلد الرابع (#قسم 159)": 45,
+    "تأويل القرآن العظيم - المجلد الخامس (#قسم 160)": 81,
+    "تأويل الأمين (#قسم 161)": 44,
+    "زيارة الرسول ﷺ (#قسم 162)": 13,
+    "الله أكبر - رفقاً بالحيوان (#قسم 163)": 2
+  }
+}
