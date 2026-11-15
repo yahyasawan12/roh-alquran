@@ -111,7 +111,6 @@
     }
     .c-circle.active { border: 3px solid var(--primary); transform: scale(1.08); }
 
-    /* البحث المدمج بالذكاء الاصطناعي */
     .search-panel {
       background: var(--bg-card); padding: 12px;
       border-bottom: 1px solid var(--border); display: none;
@@ -296,7 +295,12 @@
     .book-card {
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;
-      cursor: pointer; transition: transform 0.15s;
+      cursor: pointer; transition: transform 0.15s; position: relative;
+    }
+    .ready-badge {
+      position: absolute; top: 8px; right: 8px; z-index: 5;
+      background: #15803D; color: #fff; font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
     .book-cover {
       height: 175px; background: linear-gradient(135deg, #14532D, #0F291E);
@@ -402,7 +406,7 @@
     </div>
   </header>
 
-  <!-- نافذة حفظ ومشاركة البطاقة المصورة (تعمل 100% داخل تيليجرام وأندرويد) -->
+  <!-- نافذة حفظ ومشاركة البطاقة المصورة -->
   <div class="custom-modal-backdrop" id="imageCardModalBackdrop" onclick="if(event.target===this)closeImageCardModal()">
     <div class="custom-modal" style="text-align:center;">
       <div class="modal-head">
@@ -473,7 +477,6 @@
       <input type="text" id="searchInput" class="search-input" placeholder="ابحث بالذكاء الاصطناعي أو بالكلمة (مثال: سرقة، الزكاة، الصبر)..." onkeydown="if(event.key==='Enter')executeSmartSearch()" />
       <button class="search-btn" id="ui-search-btn" onclick="executeSmartSearch()">🔍 بحث ذكي</button>
     </div>
-    <!-- صندوق إجابة الذكاء الاصطناعي -->
     <div class="ai-answer-box" id="aiSearchBox"></div>
     <div class="search-results" id="searchResults"></div>
   </section>
@@ -555,14 +558,14 @@
 
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <button class="tb-btn primary" id="btnAudioModeQuran" onclick="switchAudioMode('quran')">🎙️ تلاوات السور الكاملة (تعمل فوراً)</button>
-      <button class="tb-btn" id="btnAudioModeLessons" onclick="switchAudioMode('lessons')">📚 أرشيف الدروس الصوتية</button>
+      <button class="tb-btn" id="btnAudioModeLessons" onclick="switchAudioMode('lessons')">📚 الدروس الصوتية وتأويل القرآن</button>
     </div>
 
     <div class="cats-bar" id="audioCatsBar"></div>
     <div id="audioListContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
   </main>
 
-  <!-- التبويب 4: مود الاختبارات التفاعلي (يدعم التحديث والحذف من البوت) -->
+  <!-- التبويب 4: مود الاختبارات التفاعلي -->
   <main class="tab-view" id="tab-quiz">
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:16px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -824,6 +827,7 @@
     let apiCategories = [];
     let apiBooks = [];
     let apiStatics = [];
+    let mediaRegistry = { books_done: {}, audios_done: {} };
     let activeBookId = null;
     let wakeLockSentinel = null;
     let ayahAudioPlayer = null;
@@ -876,12 +880,23 @@
         loadQuranJson(),
         loadServerData(),
         loadLegacyBooksAndTawil(),
+        loadMediaRegistry(),
         loadDynamicQuizzes()
       ]);
       renderBooksSection();
       renderAudioSection();
       renderQuiz();
     });
+
+    async function loadMediaRegistry() {
+      try {
+        const res = await fetch("data/media_registry.json?t=" + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          if (data) mediaRegistry = data;
+        }
+      } catch (e) {}
+    }
 
     async function loadDynamicQuizzes() {
       try {
@@ -905,7 +920,7 @@
       showToast(`قريباً إن شاء الله • سيتم ربط قناة ${platformName} الرسمية لتطبيق روح القرآن ونعيمه قريباً`);
     }
 
-    // ================== 1. تلاوة الآيات المتتالية (آية تلو الأخرى دون توقف بعد الأولى) ==================
+    // ================== 1. تلاوة الآيات المتتالية (آية تلو الأخرى) ==================
     function togglePlaySelectedAyahs() {
       if (isRecitingAyahs) {
         stopAyahRecitation();
@@ -950,7 +965,6 @@
           if (isRecitingAyahs) playNextInQueue();
         };
         ayahAudioPlayer.onerror = () => {
-          showToast("تعذر تحميل صوت هذه الآية، جاري الانتقال للتالية...");
           if (isRecitingAyahs) playNextInQueue();
         };
         ayahAudioPlayer.play().catch(() => {
@@ -976,7 +990,7 @@
       }
     }
 
-    // ================== 2. البحث الذكي المدمج بالذكاء الاصطناعي + الميزان الصرفي الدقيق ==================
+    // ================== 2. البحث الذكي المدمج بالذكاء الاصطناعي ==================
     function normalizeArabic(text) {
       if (!text) return "";
       return text
@@ -990,13 +1004,11 @@
         .trim();
     }
 
-    // استخراج الجذر الحقيقي دون حذف الحروف الأصلية للكلمة (فكلمة "سرقة" جذرها "سرق" فقط ولا تختلط أبداً بـ "تفرقة")
     function extractStrictArabicCore(word) {
       let w = normalizeArabic(word).replace(/\s+/g, "");
       if (w.length <= 2) return { norm: w, core: w };
       const norm = w;
 
-      // حذف آل التعريف ومشتقاتها فقط
       const articlePrefixes = ["وال", "فال", "بال", "كال", "لل", "ال"];
       let hadArticle = false;
       for (const p of articlePrefixes) {
@@ -1007,17 +1019,14 @@
         }
       }
 
-      // حذف واو أو فاء العطف قبل الأفعال المضارعة (ويسرق، فيسرق، ولا يسرقن)
       if (!hadArticle && w.length >= 4 && (w[0] === "و" || w[0] === "ف") && /^[يتنأ]/.test(w.slice(1))) {
         w = w.slice(1);
       }
 
-      // حذف التاء المربوطة في آخر الأسماء (سرقة -> سرق، السارقة -> سارق)
       if (w.endsWith("ه") && w.length >= 4) {
         w = w.slice(0, -1);
       }
 
-      // حذف لواحق الجمع والضمائر الواضحة
       const suffixes = ["ون", "ين", "ان", "ات", "وا", "هم", "كم", "نا", "ها"];
       for (const s of suffixes) {
         if (w.endsWith(s) && w.length - s.length >= 3) {
@@ -1026,17 +1035,14 @@
         }
       }
 
-      // حذف نون النسوة أو التوكيد في الأفعال المضارعة (يسرقن -> يسرق)
       if (!hadArticle && /^[يتن]/.test(w) && w.endsWith("ن") && w.length >= 5) {
         w = w.slice(0, -1);
       }
 
-      // حذف حرف المضارعة (ي/ت/ن) فقط إذا لم تكن الكلمة معرفة بـ "ال" وبقي 3 حروف أصلية
       if (!hadArticle && /^[يتن]/.test(w) && w.length === 4) {
         w = w.slice(1);
       }
 
-      // رد وزن (فاعل -> فعل) مثل (سارق -> سرق، كاتب -> كتب) بشرط تطابق الحروف الثلاثة الأصلية
       let core = w;
       if (core.length === 4 && core[1] === "ا") {
         core = core[0] + core[2] + core[3];
@@ -1062,7 +1068,6 @@
       let exactResults = [];
       let derivativeResults = [];
 
-      // 1. البحث الدقيق في القرآن الكريم (بدون نتائج عشوائية)
       quranData.forEach(s => {
         s.verses.forEach(v => {
           const vNorm = normalizeArabic(v.text);
@@ -1084,7 +1089,6 @@
             return;
           }
 
-          // مطابقة المشتقات الحقيقية للكلمة فقط (مثل سرقة -> السارق، السارقة، سرق، يسرقن، سارقين)
           let matchCount = 0;
           const highlightedWords = rawWords.map(rw => {
             const info = extractStrictArabicCore(rw);
@@ -1106,7 +1110,6 @@
         });
       });
 
-      // 2. البحث في الكتب والمؤلفات
       let bookHits = [];
       apiBooks.forEach(b => {
         if (!b.is_audio) {
@@ -1121,7 +1124,6 @@
         }
       });
 
-      // دمج النتائج مع تحديد سقف مريح (أقوى 20 نتيجة فقط لمنع الإزعاج)
       const allResults = [...exactResults, ...derivativeResults, ...bookHits].slice(0, 20);
 
       if (!allResults.length) {
@@ -1139,7 +1141,6 @@
         `).join("");
       }
 
-      // 3. تشغيل مساعد الذكاء الاصطناعي لشرح المفهوم القرآني وإعطاء الآيات الدلالية
       aiBox.classList.add("show");
       aiBox.innerHTML = `🤖 <strong>الباحث القرآني الذكي:</strong> جاري تحليل «${rawQuery}» في القرآن الكريم...`;
       try {
@@ -1176,7 +1177,7 @@
       }
     }
 
-    // ================== 3. حفظ ومشاركة بطاقة الصورة داخل تيليجرام وأندرويد ==================
+    // ================== 3. حفظ ومشاركة بطاقة الصورة ==================
     function shareAsImageCard() {
       if (!selectedAyahs.length) return;
       const surah = quranData.find(s => s.id === currentSurah);
@@ -1245,7 +1246,6 @@
           } catch (e) {}
         }
       }
-      // بديل مباشر إذا لم يدعم الجهاز مشاركة الملفات
       const a = document.createElement("a");
       a.href = document.getElementById("generatedCardPreview").src;
       a.download = `roh-alquran-${currentSurah}.png`;
@@ -1255,7 +1255,288 @@
       showToast("اضغط مطولاً على الصورة في النافذة واختر «حفظ الصورة»");
     }
 
-    // ================== 4. بقية وظائف التطبيق ==================
+    // ================== 4. الكتب والصوتيات المربوطة بمحرك الرفع الذكي (EPUB / PDF / MP3) ==================
+    function renderBooksSection(selectedCatId = null) {
+      const bookLang = (currentLang === "fr" || currentLang === "en") ? currentLang : "ar";
+      const textCats = apiCategories.filter(c => !c.is_audio && c.language === bookLang);
+
+      const catsBar = document.getElementById("bookCatsBar");
+      catsBar.innerHTML = `<button class="cat-chip ${!selectedCatId ? 'active' : ''}" onclick="renderBooksSection(null)">الكل (${bookLang.toUpperCase()})</button>` +
+        textCats.map(c => `<button class="cat-chip ${Number(selectedCatId) === Number(c.id) ? 'active' : ''}" onclick="renderBooksSection(${c.id})">${c.name}</button>`).join("");
+
+      const catIds = new Set(textCats.map(c => Number(c.id)));
+      let filtered = apiBooks.filter(b => !b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
+
+      if (legacyBooks.length > 0 && bookLang === "ar" && !selectedCatId) {
+        const extra = legacyBooks.map((lb, i) => ({
+          id: 9000 + i,
+          name: lb.title || `كتاب ${i + 1}`,
+          image_url: "",
+          category: { name: lb.category || "النصوص الكاملة" },
+          _legacyContent: lb.content
+        }));
+        filtered = [...extra, ...filtered];
+      }
+
+      const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
+      const doneMap = (mediaRegistry && mediaRegistry.books_done) || {};
+      const grid = document.getElementById("booksGrid");
+
+      if (!filtered.length) {
+        grid.innerHTML = `<p style="grid-column:1/-1;padding:16px;color:var(--text-muted);">جاري تحميل قائمة الكتب...</p>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(b => {
+        const p = progMap[b.id] ? progMap[b.id].pct : 0;
+        const isReady = Boolean(doneMap[String(b.id)] || b._legacyContent);
+        const proxyImg = safeImageProxy(b.image_url);
+        return `
+          <div class="book-card" onclick="openBookItem(${b.id})">
+            ${isReady ? `<span class="ready-badge">✅ جاهز للقراءة</span>` : `<span class="ready-badge" style="background:#D97706;">#${b.id}</span>`}
+            <div class="book-cover">
+              <span>📖<br>${b.name}</span>
+              ${proxyImg ? `<img src="${proxyImg}" alt="${b.name}" loading="lazy" onerror="this.style.display='none'" />` : ''}
+            </div>
+            <div class="book-info">
+              <div class="book-title">${b.name}</div>
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;">
+                  <span>${(b.category && b.category.name) || "روح القرآن"}</span>
+                  <span>${p}%</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width:${p}%"></div></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function openBookItem(bookId) {
+      let book = apiBooks.find(b => Number(b.id) === Number(bookId));
+      if (!book && bookId >= 9000) {
+        const lb = legacyBooks[bookId - 9000];
+        if (lb) book = { id: bookId, name: lb.title, content: lb.content, category: { name: lb.category } };
+      }
+      if (!book) return;
+
+      activeBookId = bookId;
+      document.getElementById("readerModalTitle").textContent = book.name;
+      const bodyEl = document.getElementById("readerModalBody");
+      bodyEl.innerHTML = `<p style="text-align:center;padding:30px;">⏳ جاري فتح الكتاب بأقصى سرعة...</p>`;
+      document.getElementById("readerModal").classList.add("show");
+
+      // 1. الفحص الأول: قراءة نص الكتاب المستخرج من EPUB (فائق السرعة ويدعم تكبير الخط والوضع الليلي)
+      try {
+        const epubRes = await fetch(`data/books_content/${bookId}.json`);
+        if (epubRes.ok) {
+          const epubData = await epubRes.json();
+          if (epubData && epubData.html) {
+            bodyEl.innerHTML = cleanTextAndBrand(epubData.html);
+            restoreBookScroll(bookId, bodyEl, book.name);
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // 2. الفحص الثاني: عرض ملف PDF المرفوع مباشرة داخل القارئ
+      try {
+        const pdfUrl = `data/files/books/${bookId}.pdf`;
+        const pdfCheck = await fetch(pdfUrl, { method: "HEAD" });
+        if (pdfCheck.ok) {
+          bodyEl.innerHTML = `
+            <div style="display:flex;flex-direction:column;height:78vh;gap:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+                <span>📖 <strong>${book.name}</strong> (نسخة PDF كاملة)</span>
+                <a href="${pdfUrl}" download="${book.name}.pdf" class="bot-cta-btn" style="margin:0;">📥 تنزيل PDF في الجهاز</a>
+              </div>
+              <iframe src="${pdfUrl}" style="width:100%;flex:1;border:1px solid var(--border);border-radius:12px;"></iframe>
+            </div>
+          `;
+          saveProgress("book", { id: bookId, title: book.name, pct: 50 });
+          return;
+        }
+      } catch (e) {}
+
+      // 3. الفحص الثالث: الكتب المحلية أو إرشاد الرفع
+      const matchLegacy = book.content ? book : legacyBooks.find(lb => lb.title && (
+        normalizeArabic(lb.title).includes(normalizeArabic(book.name)) ||
+        normalizeArabic(book.name).includes(normalizeArabic(lb.title))
+      ));
+      const proxyImg = safeImageProxy(book.image_url);
+
+      if (matchLegacy && matchLegacy.content) {
+        bodyEl.innerHTML = cleanTextAndBrand(matchLegacy.content).replace(/\n/g, "<br>");
+      } else {
+        bodyEl.innerHTML = `
+          <div style="text-align:center;padding:20px 10px;">
+            ${proxyImg ? `<img src="${proxyImg}" style="max-width:170px;border-radius:12px;margin-bottom:14px;" onerror="this.style.display='none'" />` : ''}
+            <h3>${book.name}</h3>
+            <p style="text-align:center;color:var(--text-muted);margin:10px 0;">
+              معرّف الكتاب في النظام: <strong>#${book.id}</strong> • القسم: ${(book.category && book.category.name) || "المؤلفات"}
+            </p>
+            <div style="background:var(--primary-light);padding:16px;border-radius:14px;text-align:center;margin-top:14px;line-height:1.9;">
+              📖 لرفع هذا الكتاب تلقائياً: فقط أرسل ملف الـ <strong>EPUB</strong> أو <strong>PDF</strong> الخاص به إلى البوت أو القناة الخاصة (أو اكتب بالوصف <code>#${book.id}</code>)، وسيُفتح هنا فوراً!
+            </div>
+            <a href="https://t.me/Rohalquraan_app_Bot" target="_blank" class="bot-cta-btn" style="margin-top:16px;font-size:15px;padding:12px 22px;">
+              📥 فتح البوت (@Rohalquraan_app_Bot)
+            </a>
+          </div>
+        `;
+      }
+      restoreBookScroll(bookId, bodyEl, book.name);
+    }
+
+    function restoreBookScroll(bookId, bodyEl, bookName) {
+      const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
+      if (progMap[bookId] && progMap[bookId].scrollTop) {
+        setTimeout(() => { bodyEl.scrollTop = progMap[bookId].scrollTop; }, 80);
+      }
+      saveProgress("book", { id: bookId, title: bookName, pct: (progMap[bookId] && progMap[bookId].pct) || 10 });
+    }
+
+    function trackBookScroll(el) {
+      if (!activeBookId) return;
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      const pct = maxScroll > 0 ? Math.min(100, Math.round((el.scrollTop / maxScroll) * 100)) : 100;
+      const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
+      const book = apiBooks.find(b => Number(b.id) === Number(activeBookId));
+      progMap[activeBookId] = { scrollTop: el.scrollTop, pct: pct, title: book ? book.name : "" };
+      localStorage.setItem("roh_book_progress", JSON.stringify(progMap));
+      if (book) saveProgress("book", { id: activeBookId, title: book.name, pct: pct });
+    }
+
+    function closeReaderModal() {
+      document.getElementById("readerModal").classList.remove("show");
+      renderBooksSection();
+    }
+
+    function changeReaderFont(delta) {
+      const body = document.getElementById("readerModalBody");
+      const cur = parseInt(window.getComputedStyle(body).fontSize, 10) || 19;
+      body.style.fontSize = Math.min(32, Math.max(15, cur + delta)) + "px";
+    }
+
+    // ================== 5. قسم الصوتيات (يدعم تشغيل الملفات المرفوعة data/files/audio/{id}.mp3 مباشرة) ==================
+    function switchAudioMode(mode) {
+      audioMode = mode;
+      document.getElementById("btnAudioModeQuran").classList.toggle("primary", mode === "quran");
+      document.getElementById("btnAudioModeLessons").classList.toggle("primary", mode === "lessons");
+      renderAudioSection();
+    }
+
+    function renderAudioSection(selectedCatId = null) {
+      const bar = document.getElementById("audioCatsBar");
+      const container = document.getElementById("audioListContainer");
+
+      if (audioMode === "quran") {
+        const reciters = [
+          { id: "shatri", name: "الشيخ أبو بكر الشاطري", server: "https://server11.mp3quran.net/shatri" },
+          { id: "afs", name: "الشيخ مشاري العفاسي", server: "https://server8.mp3quran.net/afs" },
+          { id: "maher", name: "الشيخ ماهر المعيقلي", server: "https://server12.mp3quran.net/maher" },
+          { id: "husr", name: "الشيخ محمود خليل الحصري", server: "https://server13.mp3quran.net/husr" },
+          { id: "minsh", name: "الشيخ محمد صديق المنشاوي", server: "https://server10.mp3quran.net/minsh" }
+        ];
+        const activeServer = selectedCatId || reciters[0].server;
+
+        bar.innerHTML = reciters.map(r => `
+          <button class="cat-chip ${activeServer === r.server ? 'active' : ''}" onclick="renderAudioSection('${r.server}')">🎙️ ${r.name}</button>
+        `).join("");
+
+        const list = quranData.length ? quranData : [{ id: 1, name: "الفاتحة", total_verses: 7 }];
+        container.innerHTML = list.map(s => {
+          const pad = String(s.id).padStart(3, "0");
+          const mp3Url = `${activeServer}/${pad}.mp3`;
+          return `
+            <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px 14px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-weight:700;font-size:15px;">${s.id}. سورة ${s.name}</div>
+                <div style="font-size:12px;color:var(--text-muted);">عدد آياتها: ${s.total_verses} آية • استماع داخلي مباشر</div>
+              </div>
+              <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 16px;" onclick="playAudioTrack('${mp3Url}', 'تلاوة سورة ${s.name}', 0, null)">▶ تشغيل</button>
+            </div>
+          `;
+        }).join("");
+        return;
+      }
+
+      const audioLang = currentLang === "en" ? "en" : "ar";
+      const audioCats = apiCategories.filter(c => c.is_audio && c.language === audioLang);
+
+      bar.innerHTML = `<button class="cat-chip ${!selectedCatId ? 'active' : ''}" onclick="renderAudioSection(null)">كل الدروس</button>` +
+        audioCats.map(c => `<button class="cat-chip ${Number(selectedCatId) === Number(c.id) ? 'active' : ''}" onclick="renderAudioSection(${c.id})">${c.name} (#قسم ${c.id})</button>`).join("");
+
+      const catIds = new Set(audioCats.map(c => Number(c.id)));
+      const tracks = apiBooks.filter(b => b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
+      const doneAudios = (mediaRegistry && mediaRegistry.audios_done) || {};
+
+      container.innerHTML = tracks.slice(0, 120).map(t => {
+        const isUploaded = Boolean(doneAudios[String(t.id)]);
+        return `
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div>
+              <div style="font-weight:600;font-size:14.5px;">
+                ${isUploaded ? '✅ ' : ''}${t.title || t.name}
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);">
+                #${t.id} • ${(t.category && t.category.name) || t.album || ""} ${t.file_name ? `(${t.file_name})` : ''}
+              </div>
+            </div>
+            <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 14px;" onclick="playAudioTrack('${(t.url || '').replace(/'/g, "\\'")}', '${(t.title || t.name || '').replace(/'/g, "\\'")}', 0, ${t.id})">▶ استماع</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function playAudioTrack(url, title, resumeTime = 0, itemId = null) {
+      const bar = document.getElementById("audioPlayerBar");
+      const audioEl = document.getElementById("mainAudioEl");
+      const statusBadge = document.getElementById("audioStatusBadge");
+
+      document.getElementById("nowPlayingTitle").textContent = "🎧 " + title;
+      statusBadge.textContent = "⏳ جاري التحميل...";
+      bar.style.display = "block";
+
+      let candidates = [];
+      // الأولوية الأولى: الملف الصوتي المرفوع إلى مستودعنا من تيليجرام
+      if (itemId) {
+        candidates.push(`data/files/audio/${itemId}.mp3`);
+      }
+      if (url && url !== "0") {
+        if (url.startsWith("http://")) {
+          candidates.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+          candidates.push(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+        }
+        candidates.push(url);
+      }
+
+      let tryIdx = 0;
+      function tryNextSource() {
+        if (tryIdx >= candidates.length) {
+          statusBadge.textContent = `⚠️ بانتظار رفع الملف (#${itemId || ''})`;
+          showToast(`أرسل هذا الملف الصوتي للبوت أو القناة ليشتغل فوراً داخل التطبيق`);
+          return;
+        }
+        audioEl.src = candidates[tryIdx++];
+        if (resumeTime > 0) audioEl.currentTime = resumeTime;
+        const p = audioEl.play();
+        if (p !== undefined) {
+          p.then(() => {
+            statusBadge.textContent = "▶ يعمل الآن";
+          }).catch(() => tryNextSource());
+        }
+      }
+
+      audioEl.onerror = () => tryNextSource();
+      tryNextSource();
+
+      audioEl.ontimeupdate = () => {
+        saveProgress("audio", { url, title, time: Math.floor(audioEl.currentTime), itemId });
+      };
+    }
+
+    // ================== 6. بقية دوال الإعدادات والتنقل ==================
     function openFontModal() { document.getElementById("fontModalBackdrop").classList.add("show"); }
     function closeFontModal() { document.getElementById("fontModalBackdrop").classList.remove("show"); }
 
@@ -1461,7 +1742,7 @@
       }
 
       if (!explanation) {
-        explanation = `تأويل سورة ${surah.name} (الآية ${ayahId}) ضمن سلسلة «تأويل القرآن العظيم» للعلّامة الإنساني محمد أمين شيخو قدس سره.\n\nللحصول على مجلدات التأويل الكاملة بصيغة PDF، يمكنك مراسلة البوت (@Rohalquraan_app_Bot).`;
+        explanation = `تأويل سورة ${surah.name} (الآية ${ayahId}) ضمن سلسلة «تأويل القرآن العظيم» للعلّامة الإنساني محمد أمين شيخو قدس سره.\n\nعند رفع ملفات الـ EPUB الخاصة بمجلدات التأويل عبر البوت، سيظهر الشرح التفصيلي هنا تلقائياً.`;
       }
 
       document.getElementById("tafsirExplanationText").innerHTML = explanation.replace(/\n/g, "<br>");
@@ -1518,241 +1799,6 @@
       document.getElementById("readerModal").classList.add("show");
     }
 
-    function renderBooksSection(selectedCatId = null) {
-      const bookLang = (currentLang === "fr" || currentLang === "en") ? currentLang : "ar";
-      const textCats = apiCategories.filter(c => !c.is_audio && c.language === bookLang);
-
-      const catsBar = document.getElementById("bookCatsBar");
-      catsBar.innerHTML = `<button class="cat-chip ${!selectedCatId ? 'active' : ''}" onclick="renderBooksSection(null)">الكل (${bookLang.toUpperCase()})</button>` +
-        textCats.map(c => `<button class="cat-chip ${Number(selectedCatId) === Number(c.id) ? 'active' : ''}" onclick="renderBooksSection(${c.id})">${c.name}</button>`).join("");
-
-      const catIds = new Set(textCats.map(c => Number(c.id)));
-      let filtered = apiBooks.filter(b => !b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
-
-      if (legacyBooks.length > 0 && bookLang === "ar" && !selectedCatId) {
-        const extra = legacyBooks.map((lb, i) => ({
-          id: 9000 + i,
-          name: lb.title || `كتاب ${i + 1}`,
-          image_url: "",
-          category: { name: lb.category || "النصوص الكاملة" },
-          _legacyContent: lb.content
-        }));
-        filtered = [...extra, ...filtered];
-      }
-
-      const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
-      const grid = document.getElementById("booksGrid");
-
-      if (!filtered.length) {
-        grid.innerHTML = `<p style="grid-column:1/-1;padding:16px;color:var(--text-muted);">جاري تحميل قائمة الكتب...</p>`;
-        return;
-      }
-
-      grid.innerHTML = filtered.map(b => {
-        const p = progMap[b.id] ? progMap[b.id].pct : 0;
-        const proxyImg = safeImageProxy(b.image_url);
-        return `
-          <div class="book-card" onclick="openBookItem(${b.id})">
-            <div class="book-cover">
-              <span>📖<br>${b.name}</span>
-              ${proxyImg ? `<img src="${proxyImg}" alt="${b.name}" loading="lazy" onerror="this.style.display='none'" />` : ''}
-            </div>
-            <div class="book-info">
-              <div class="book-title">${b.name}</div>
-              <div>
-                <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;">
-                  <span>${(b.category && b.category.name) || "روح القرآن"}</span>
-                  <span>${p}%</span>
-                </div>
-                <div class="progress-track"><div class="progress-fill" style="width:${p}%"></div></div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function openBookItem(bookId) {
-      let book = apiBooks.find(b => Number(b.id) === Number(bookId));
-      if (!book && bookId >= 9000) {
-        const lb = legacyBooks[bookId - 9000];
-        if (lb) book = { id: bookId, name: lb.title, content: lb.content, category: { name: lb.category } };
-      }
-      if (!book) return;
-
-      activeBookId = bookId;
-      document.getElementById("readerModalTitle").textContent = book.name;
-
-      const matchLegacy = book.content ? book : legacyBooks.find(lb => lb.title && (
-        normalizeArabic(lb.title).includes(normalizeArabic(book.name)) ||
-        normalizeArabic(book.name).includes(normalizeArabic(lb.title))
-      ));
-      const bodyEl = document.getElementById("readerModalBody");
-      const proxyImg = safeImageProxy(book.image_url);
-
-      if (matchLegacy && matchLegacy.content) {
-        bodyEl.innerHTML = cleanTextAndBrand(matchLegacy.content).replace(/\n/g, "<br>");
-      } else {
-        bodyEl.innerHTML = `
-          <div style="text-align:center;padding:20px 10px;">
-            ${proxyImg ? `<img src="${proxyImg}" style="max-width:170px;border-radius:12px;margin-bottom:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15);" onerror="this.style.display='none'" />` : ''}
-            <h3>${book.name}</h3>
-            <p style="text-align:center;color:var(--text-muted);margin:10px 0;">
-              القسم: ${(book.category && book.category.name) || "المؤلفات العلمية"}
-            </p>
-            <div style="background:var(--primary-light);padding:16px;border-radius:14px;text-align:center;margin-top:14px;line-height:1.9;">
-              📖 يمكنك قراءة وتحميل النسخة الكاملة من كتاب (<strong>${book.name}</strong>) بصيغة <strong>PDF</strong> سريعة التحميل مباشرة عبر بوت تيليجرام الخاص بالتطبيق:
-            </div>
-            <a href="https://t.me/Rohalquraan_app_Bot" target="_blank" class="bot-cta-btn" style="margin-top:16px;font-size:15px;padding:12px 22px;">
-              📥 فتح وتحميل الكتاب PDF عبر البوت
-            </a>
-          </div>
-        `;
-      }
-
-      document.getElementById("readerModal").classList.add("show");
-      const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
-      if (progMap[bookId] && progMap[bookId].scrollTop) {
-        setTimeout(() => { bodyEl.scrollTop = progMap[bookId].scrollTop; }, 80);
-      }
-      saveProgress("book", { id: bookId, title: book.name, pct: (progMap[bookId] && progMap[bookId].pct) || 10 });
-    }
-
-    function trackBookScroll(el) {
-      if (!activeBookId) return;
-      const maxScroll = el.scrollHeight - el.clientHeight;
-      const pct = maxScroll > 0 ? Math.min(100, Math.round((el.scrollTop / maxScroll) * 100)) : 100;
-      const progMap = JSON.parse(localStorage.getItem("roh_book_progress") || "{}");
-      const book = apiBooks.find(b => Number(b.id) === Number(activeBookId));
-      progMap[activeBookId] = { scrollTop: el.scrollTop, pct: pct, title: book ? book.name : "" };
-      localStorage.setItem("roh_book_progress", JSON.stringify(progMap));
-      if (book) saveProgress("book", { id: activeBookId, title: book.name, pct: pct });
-    }
-
-    function closeReaderModal() {
-      document.getElementById("readerModal").classList.remove("show");
-      renderBooksSection();
-    }
-
-    function changeReaderFont(delta) {
-      const body = document.getElementById("readerModalBody");
-      const cur = parseInt(window.getComputedStyle(body).fontSize, 10) || 19;
-      body.style.fontSize = Math.min(32, Math.max(15, cur + delta)) + "px";
-    }
-
-    function switchAudioMode(mode) {
-      audioMode = mode;
-      document.getElementById("btnAudioModeQuran").classList.toggle("primary", mode === "quran");
-      document.getElementById("btnAudioModeLessons").classList.toggle("primary", mode === "lessons");
-      renderAudioSection();
-    }
-
-    function renderAudioSection(selectedCatId = null) {
-      const bar = document.getElementById("audioCatsBar");
-      const container = document.getElementById("audioListContainer");
-
-      if (audioMode === "quran") {
-        const reciters = [
-          { id: "shatri", name: "الشيخ أبو بكر الشاطري", server: "https://server11.mp3quran.net/shatri" },
-          { id: "afs", name: "الشيخ مشاري العفاسي", server: "https://server8.mp3quran.net/afs" },
-          { id: "maher", name: "الشيخ ماهر المعيقلي", server: "https://server12.mp3quran.net/maher" },
-          { id: "husr", name: "الشيخ محمود خليل الحصري", server: "https://server13.mp3quran.net/husr" },
-          { id: "minsh", name: "الشيخ محمد صديق المنشاوي", server: "https://server10.mp3quran.net/minsh" }
-        ];
-        const activeServer = selectedCatId || reciters[0].server;
-
-        bar.innerHTML = reciters.map(r => `
-          <button class="cat-chip ${activeServer === r.server ? 'active' : ''}" onclick="renderAudioSection('${r.server}')">🎙️ ${r.name}</button>
-        `).join("");
-
-        const list = quranData.length ? quranData : [{ id: 1, name: "الفاتحة", total_verses: 7 }];
-        container.innerHTML = list.map(s => {
-          const pad = String(s.id).padStart(3, "0");
-          const mp3Url = `${activeServer}/${pad}.mp3`;
-          return `
-            <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px 14px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-weight:700;font-size:15px;">${s.id}. سورة ${s.name}</div>
-                <div style="font-size:12px;color:var(--text-muted);">عدد آياتها: ${s.total_verses} آية • استماع داخلي مباشر</div>
-              </div>
-              <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 16px;" onclick="playAudioTrack('${mp3Url}', 'تلاوة سورة ${s.name}')">▶ تشغيل</button>
-            </div>
-          `;
-        }).join("");
-        return;
-      }
-
-      const audioLang = currentLang === "en" ? "en" : "ar";
-      const audioCats = apiCategories.filter(c => c.is_audio && c.language === audioLang);
-
-      bar.innerHTML = `<button class="cat-chip ${!selectedCatId ? 'active' : ''}" onclick="renderAudioSection(null)">كل الدروس</button>` +
-        audioCats.map(c => `<button class="cat-chip ${Number(selectedCatId) === Number(c.id) ? 'active' : ''}" onclick="renderAudioSection(${c.id})">${c.name} (${c.books_count})</button>`).join("");
-
-      const catIds = new Set(audioCats.map(c => Number(c.id)));
-      const tracks = apiBooks.filter(b => b.is_audio && (selectedCatId ? Number(b.cat_id) === Number(selectedCatId) : catIds.has(Number(b.cat_id))));
-
-      container.innerHTML = `
-        <div style="background:var(--primary-light);padding:12px;border-radius:12px;font-size:13px;margin-bottom:6px;">
-          💡 ملاحظة: الدروس الصوتية التي توقف سيرفرها القديم يمكنك طلبها واستماعها مباشرة عبر بوت تيليجرام (@Rohalquraan_app_Bot).
-        </div>
-      ` + tracks.slice(0, 100).map(t => `
-        <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-          <div>
-            <div style="font-weight:600;font-size:14.5px;">${t.title || t.name}</div>
-            <div style="font-size:12px;color:var(--text-muted);">${(t.category && t.category.name) || t.album || ""}</div>
-          </div>
-          <button class="tb-btn primary" style="flex:0 0 auto;padding:8px 14px;" onclick="playAudioTrack('${(t.url || '').replace(/'/g, "\\'")}', '${(t.title || t.name || '').replace(/'/g, "\\'")}')">▶ استماع</button>
-        </div>
-      `).join("");
-    }
-
-    function playAudioTrack(url, title, resumeTime = 0) {
-      if (!url || url === "0") {
-        showToast("هذا الملف متاح عبر أرشيف البوت (@Rohalquraan_app_Bot)");
-        return;
-      }
-      const bar = document.getElementById("audioPlayerBar");
-      const audioEl = document.getElementById("mainAudioEl");
-      const statusBadge = document.getElementById("audioStatusBadge");
-
-      document.getElementById("nowPlayingTitle").textContent = "🎧 " + title;
-      statusBadge.textContent = "⏳ جاري الاتصال...";
-      bar.style.display = "block";
-
-      let candidates = [];
-      if (url.startsWith("http://")) {
-        const proxy1 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const proxy2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-        candidates = [proxy1, proxy2, url];
-      } else {
-        candidates = [url];
-      }
-
-      let tryIdx = 0;
-      function tryNextSource() {
-        if (tryIdx >= candidates.length) {
-          statusBadge.textContent = "⚠️ متاح عبر البوت";
-          showToast("السيرفر الأصلي لهذا الدرس غير متاح حالياً، يمكنك سماعه عبر البوت أو تشغيل تلاوات السور الكاملة");
-          return;
-        }
-        audioEl.src = candidates[tryIdx++];
-        if (resumeTime > 0) audioEl.currentTime = resumeTime;
-        const p = audioEl.play();
-        if (p !== undefined) {
-          p.then(() => {
-            statusBadge.textContent = "▶ يعمل الآن";
-          }).catch(() => tryNextSource());
-        }
-      }
-
-      audioEl.onerror = () => tryNextSource();
-      tryNextSource();
-
-      audioEl.ontimeupdate = () => {
-        saveProgress("audio", { url, title, time: Math.floor(audioEl.currentTime) });
-      };
-    }
-
     function changeReciter(rec) {
       currentReciter = rec;
       localStorage.setItem("roh_reciter", rec);
@@ -1804,7 +1850,7 @@
       const state = JSON.parse(localStorage.getItem("roh_progress_hub") || "{}");
       switchTab("audio");
       if (state.audio && state.audio.url) {
-        playAudioTrack(state.audio.url, state.audio.title, state.audio.time || 0);
+        playAudioTrack(state.audio.url, state.audio.title, state.audio.time || 0, state.audio.itemId || null);
       }
     }
 
