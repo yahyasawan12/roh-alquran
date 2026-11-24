@@ -1,4 +1,4 @@
-name: Deep Clean All 93 Books (Deduplicate & Strip Garbled Glyphs) + Bot CMS
+name: Bot Admin CMS (Quizzes, Sub-Admins, Books) & Deep Clean Index
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  deep-clean-and-cms:
+  bot-cms-and-clean:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,23 +21,60 @@ jobs:
       - name: Install Python Libraries
         run: pip install requests beautifulsoup4 lxml pymupdf urllib3
 
-      - name: Deduplicate Paragraphs, Strip QCF Garbled Chars & Run Bot CMS
+      - name: Run Bot Admin Commands, Clean Books & Update Search/Audit Index
         env:
           BOT_TOKEN: ${{ secrets.BO_TOKEN }}
           SUPER_ADMIN_ID: "5205216077"
         run: |
           python3 - << 'EOF'
-          import os, re, io, json, glob, urllib3
-          import requests
+          import os, re, io, json, glob, zipfile, urllib3
+          import xml.etree.ElementTree as ET
+          import requests, fitz
           from bs4 import BeautifulSoup
           urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
           TOKEN = os.environ.get("BOT_TOKEN", "").strip()
           SUPER_ADMIN_ID = str(os.environ.get("SUPER_ADMIN_ID", "5205216077")).strip()
 
+          os.makedirs("data/user_books", exist_ok=True)
+
+          # 1. تسجيل قائمة أوامر البوت لتظهر فوراً عند كتابة (/) على الكيبورد
+          bot_commands = [
+              {"command": "help", "description": "📋 عرض جميع الأوامر وشرحها"},
+              {"command": "quizzes", "description": "🧠 عرض كل الاختبارات مرقمة"},
+              {"command": "add_auto_quiz", "description": "➕ إضافة اختبار مؤتمت (عدة أسطر)"},
+              {"command": "add_trad_quiz", "description": "➕ إضافة اختبار تقليدي (سؤال وجواب)"},
+              {"command": "del_quiz", "description": "🗑️ حذف سؤال برقمه"},
+              {"command": "edit_quiz", "description": "✏️ تعديل سؤال برقمه"},
+              {"command": "add_admin", "description": "👤 إضافة أدمن اختبارات باليوزر (للمالك)"},
+              {"command": "del_admin", "description": "🚫 حذف أدمن فرعي (للمالك)"},
+              {"command": "add_file", "description": "📤 إضافة كتاب جديد مع اللغة والقسم (للمالك)"},
+              {"command": "books_list", "description": "📚 عرض قائمة الكتب وأرقامها (للمالك)"},
+              {"command": "del_file", "description": "🗑️ حذف كتاب برقمه (للمالك)"},
+              {"command": "mark_ok", "description": "✅ اعتماد كتاب بعد التدقيق البشري (للمالك)"}
+          ]
+          try:
+              requests.post(
+                  f"https://api.telegram.org/bot{TOKEN}/setMyCommands",
+                  json={"commands": bot_commands},
+                  timeout=15
+              )
+          except Exception:
+              pass
+
+          def send_tg(chat_id, text):
+              for i in range(0, len(text), 3800):
+                  try:
+                      requests.post(
+                          f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                          json={"chat_id": chat_id, "text": text[i:i+3800]},
+                          timeout=20
+                      )
+                  except Exception:
+                      pass
+
           def strip_garbled(text):
               if not text: return ""
-              # إزالة الحروف الفارسية والأوردية الناتجة عن خطوط PDF المشفرة
               text = re.sub(r'[^\s]*[پچژگکڑٹڈے]+[^\s]*', ' ', text)
               text = re.sub(r'(?:\b[أآبپتثجچحخدذرزژسشصضطظعغفقكکگلمنهوي]\s+){3,}', ' ', text)
               text = re.sub(r'\(\s*:\s*[^)]*\)', ' ', text)
@@ -49,7 +86,364 @@ jobs:
               s = re.sub(r'ة', 'ه', s)
               return re.sub(r'\s+', ' ', s).strip().lower()
 
-          # تطهير جميع ملفات الكتب المحفوظة في data/user_books/*.json من التكرار والرموز الغريبة
+          def normalize_lang_input(s):
+              s = s.strip().lower()
+              if any(w in s for w in ["فرنس", "fr", "francais", "français"]): return "fr"
+              if any(w in s for w in ["انكل", "انجل", "en", "english"]): return "en"
+              return "ar"
+
+          # استخراج الـ EPUB مع الحفاظ على الفهرس الأصلي والهوامش السفلية والفقرات
+          def extract_book_preserving_structure(raw_bytes, fname, lang="ar"):
+              ext = "epub" if fname.lower().endswith(".epub") else "pdf"
+              chapters = []
+              if ext == "epub":
+                  try:
+                      with zipfile.ZipFile(io.BytesIO(raw_bytes), 'r') as z:
+                          opf_path = None
+                          if 'META-INF/container.xml' in z.namelist():
+                              root = ET.fromstring(z.read('META-INF/container.xml'))
+                              for elem in root.iter():
+                                  if elem.tag.endswith('rootfile') and 'full-path' in elem.attrib:
+                                      opf_path = elem.attrib['full-path']
+                                      break
+                          html_files = []
+                          if opf_path and opf_path in z.namelist():
+                              opf_dir = os.path.dirname(opf_path)
+                              opf_root = ET.fromstring(z.read(opf_path))
+                              manifest, spine = {}, []
+                              for elem in opf_root.iter():
+                                  if elem.tag.endswith('item') and 'id' in elem.attrib and 'href' in elem.attrib:
+                                      manifest[elem.attrib['id']] = elem.attrib['href']
+                                  elif elem.tag.endswith('itemref') and 'idref' in elem.attrib:
+                                      spine.append(elem.attrib['idref'])
+                              for sid in spine:
+                                  href = manifest.get(sid)
+                                  if href:
+                                      full_h = os.path.normpath(os.path.join(opf_dir, href)).replace('\\', '/')
+                                      if full_h in z.namelist():
+                                          html_files.append(full_h)
+                          if not html_files:
+                              html_files = sorted([n for n in z.namelist() if n.lower().endswith(('.xhtml', '.html', '.htm'))])
+
+                          for idx, hf in enumerate(html_files, 1):
+                              r_html = z.read(hf).decode('utf-8', errors='ignore')
+                              sp = BeautifulSoup(r_html, 'lxml')
+                              for t in sp(['script', 'style', 'head', 'nav']): t.decompose()
+                              h_tags = [strip_garbled(h.get_text(" ", strip=True)) for h in sp.find_all(['h1', 'h2', 'h3']) if strip_garbled(h.get_text(" ", strip=True))]
+                              ctitle = h_tags[0] if h_tags else (f"Section {idx}" if lang != "ar" else f"المبحث {idx}")
+                              body = sp.body or sp
+                              blocks = []
+                              seen = set()
+                              for el in body.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'li', 'blockquote']):
+                                  txt = strip_garbled(el.get_text(" ", strip=True))
+                                  if not txt: continue
+                                  nl = norm_ar(txt)
+                                  if nl in seen and len(nl) > 14: continue
+                                  seen.add(nl)
+                                  tag = el.name if el.name in ['h2', 'h3'] else 'p'
+                                  blocks.append(f"<{tag}>{txt}</{tag}>")
+                              if blocks:
+                                  chapters.append({"idx": len(chapters)+1, "title": ctitle[:85], "html": "\n".join(blocks)})
+                  except Exception:
+                      pass
+              else:
+                  try:
+                      pdf_doc = fitz.open(stream=raw_bytes, filetype="pdf")
+                      toc = pdf_doc.get_toc()
+                      total_p = len(pdf_doc)
+                      if toc and len(toc) >= 2:
+                          for i, entry in enumerate(toc):
+                              _, t_title, spage = entry
+                              s_idx = max(0, spage - 1)
+                              e_idx = (toc[i+1][2] - 1) if (i+1 < len(toc)) else total_p
+                              e_idx = max(s_idx + 1, min(total_p, e_idx))
+                              plist = []
+                              for pno in range(s_idx, e_idx):
+                                  pt = pdf_doc[pno].get_text("text").strip()
+                                  if pt:
+                                      plist.extend([f"<p>{strip_garbled(ln)}</p>" for ln in pt.split("\n") if strip_garbled(ln)])
+                              if plist:
+                                  chapters.append({"idx": len(chapters)+1, "title": strip_garbled(t_title) or f"المبحث {i+1}", "html": "\n".join(plist)})
+                      else:
+                          for start_p in range(0, total_p, 10):
+                              end_p = min(total_p, start_p + 10)
+                              plist = []
+                              for pno in range(start_p, end_p):
+                                  pt = pdf_doc[pno].get_text("text").strip()
+                                  if pt:
+                                      plist.extend([f"<p>{strip_garbled(ln)}</p>" for ln in pt.split("\n") if strip_garbled(ln)])
+                              if plist:
+                                  chapters.append({"idx": len(chapters)+1, "title": f"صفحة {start_p+1} - {end_p}", "html": "\n".join(plist)})
+                  except Exception:
+                      pass
+              return ext, chapters
+
+          # 2. تحميل ملفات الحالة (الأدمن، الاختبارات، الكتالوج، وسجل التدقيق البشري)
+          admins_path = "data/admins.json"
+          if os.path.exists(admins_path):
+              with open(admins_path, "r", encoding="utf-8") as f:
+                  admins_state = json.load(f)
+          else:
+              admins_state = {"sub_admin_usernames": [], "sub_admin_ids": [], "pending_upload": None, "last_update_id": 0}
+
+          quiz_path = "data/quizzes.json"
+          if os.path.exists(quiz_path):
+              with open(quiz_path, "r", encoding="utf-8") as f:
+                  quizzes = json.load(f)
+          else:
+              quizzes = [
+                  {
+                      "type": "auto",
+                      "q": "ما هي الآية الكريمة التي تبيّن أن منهاج الدعوة إلى الله يقوم على البصيرة؟",
+                      "options": [
+                          "﴿قُلْ هَٰذِهِ سَبِيلِي أَدْعُو إِلَى اللَّهِ عَلَىٰ بَصِيرَةٍ أَنَا وَمَنِ اتَّبَعَنِي﴾ [يوسف: 108]",
+                          "﴿ادْعُ إِلَىٰ سَبِيلِ رَبِّكَ بِالْحِكْمَةِ وَالْمَوْعِظَةِ الْحَسَنَةِ﴾ [النحل: 125]",
+                          "﴿وَمَنْ أَحْسَنُ قَوْلًا مِّمَّن دَعَا إِلَى اللَّهِ﴾ [فصلت: 33]"
+                      ],
+                      "correct": 0,
+                      "explain": "تتصدر آية سورة يوسف (108) منهج «دعوتنا إلى الله»."
+                  }
+              ]
+
+          catalog_path = "data/user_books_catalog.json"
+          if os.path.exists(catalog_path):
+              with open(catalog_path, "r", encoding="utf-8") as f:
+                  catalog_state = json.load(f)
+          else:
+              catalog_state = {"next_num": 94, "scanned_msg_ids": [], "file_hashes": {}, "books": [], "deleted_nums": []}
+          if "deleted_nums" not in catalog_state:
+              catalog_state["deleted_nums"] = []
+
+          audit_path = "data/audit_tracker.json"
+          if os.path.exists(audit_path):
+              with open(audit_path, "r", encoding="utf-8") as f:
+                  audit_tracker = json.load(f)
+          else:
+              audit_tracker = {"approved": [], "notes": {}}
+
+          HELP_MENU = (
+              "📋 لوحة أوامر إدارة تطبيق «روح القرآن ونعيمه»:\n\n"
+              "━━ 🧠 أولاً: أوامر الاختبارات (للمالك والأدمن الفرعي) ━━\n"
+              "• /quizzes : عرض جميع الاختبارات مرقمة بترتيب ثابت\n"
+              "• /add_auto_quiz : إضافة اختبار مؤتمت:\n"
+              "  السطر 1: /add_auto_quiz\n"
+              "  السطر 2: السؤال\n"
+              "  السطر 3: الإجابة الصحيحة\n"
+              "  السطر 4+: كل إجابة خاطئة بسطر\n"
+              "• /add_trad_quiz : إضافة اختبار تقليدي:\n"
+              "  السطر 1: /add_trad_quiz\n"
+              "  السطر 2: السؤال\n"
+              "  السطر 3: الإجابة الصحيحة\n"
+              "• /del_quiz 2 : حذف السؤال رقم 2\n"
+              "• /edit_quiz 2 : تعديل السؤال رقم 2 وخياراته\n\n"
+              "━━ 🔐 ثانياً: أوامر المالك الحصرية (لك فقط) ━━\n"
+              "• /add_admin @username : إضافة أدمن اختبارات\n"
+              "• /del_admin @username : حذف أدمن اختبارات\n"
+              "• /add_file : إضافة كتاب جديد:\n"
+              "  السطر 1: /add_file\n"
+              "  السطر 2: عربي (أو فرنسي أو انكليزي)\n"
+              "  السطر 3: اسم القسم (مثل: دراسات إسلامية)\n"
+              "  السطر 4: اسم الكتاب (اختياري) ثم أرسل الملف\n"
+              "• /books_list : عرض قائمة الكتب وأرقامها\n"
+              "• /del_file 85 : حذف ملف كتاب برقمه\n"
+              "• /mark_ok 23 : اعتماد الكتاب رقم 23 كـ (مدقق ✓)"
+          )
+
+          # 3. معالجة رسائل وأوامر البوت
+          offset = admins_state.get("last_update_id", 0) + 1
+          up_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?offset={offset}&limit=100", timeout=25).json()
+
+          for u in up_res.get("result", []):
+              admins_state["last_update_id"] = u["update_id"]
+              msg = u.get("message") or {}
+              sender = msg.get("from") or {}
+              sender_id = str(sender.get("id", ""))
+              sender_uname = (sender.get("username") or "").lower().strip()
+              chat_id = msg.get("chat", {}).get("id", sender_id)
+              text = (msg.get("text") or msg.get("caption") or "").strip()
+              doc = msg.get("document")
+
+              is_owner = (sender_id == SUPER_ADMIN_ID)
+              is_sub_admin = (
+                  sender_id in admins_state.get("sub_admin_ids", []) or
+                  (sender_uname and sender_uname in admins_state.get("sub_admin_usernames", []))
+              )
+              if not (is_owner or is_sub_admin):
+                  continue
+
+              lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
+              cmd_head = lines[0].split()[0].lower() if lines else ""
+
+              if cmd_head in ["/start", "/help", "/commands", "اوامر", "الأوامر", "/"]:
+                  send_tg(chat_id, HELP_MENU)
+                  continue
+
+              if cmd_head == "/quizzes":
+                  if not quizzes:
+                      send_tg(chat_id, "📭 لا توجد اختبارات حالياً.")
+                  else:
+                      out = [f"🧠 قائمة الاختبارات ({len(quizzes)} سؤال):\n"]
+                      for idx, qz in enumerate(quizzes, 1):
+                          qtype = "مؤتمت" if qz.get("type") != "trad" and qz.get("options") else "تقليدي"
+                          out.append(f"🔢 [{idx}] ({qtype}): {qz.get('q')}")
+                          if qz.get("options"):
+                              out.append(f"✅ الصحيح: {qz['options'][qz.get('correct', 0)]}")
+                          else:
+                              out.append(f"✅ الجواب: {qz.get('explain', '')}")
+                          out.append("────────────")
+                      send_tg(chat_id, "\n".join(out))
+                  continue
+
+              if cmd_head == "/add_auto_quiz":
+                  if len(lines) < 3:
+                      send_tg(chat_id, "⚠️ أرسل الأمر بأسطر:\n/add_auto_quiz\nالسؤال\nالإجابة الصحيحة\nخيار خاطئ 1\nخيار خاطئ 2")
+                      continue
+                  quizzes.append({
+                      "type": "auto",
+                      "q": lines[1],
+                      "options": [lines[2]] + lines[3:],
+                      "correct": 0,
+                      "explain": f"الإجابة الصحيحة: {lines[2]}"
+                  })
+                  send_tg(chat_id, f"✅ تم إضافة الاختبار المؤتمت برقم [{len(quizzes)}]!")
+                  continue
+
+              if cmd_head == "/add_trad_quiz":
+                  if len(lines) < 3:
+                      send_tg(chat_id, "⚠️ أرسل الأمر بأسطر:\n/add_trad_quiz\nالسؤال\nالإجابة الصحيحة")
+                      continue
+                  quizzes.append({
+                      "type": "trad",
+                      "q": lines[1],
+                      "options": [],
+                      "correct": 0,
+                      "explain": "\n".join(lines[2:])
+                  })
+                  send_tg(chat_id, f"✅ تم إضافة الاختبار التقليدي برقم [{len(quizzes)}]!")
+                  continue
+
+              if cmd_head == "/del_quiz":
+                  parts = lines[0].split()
+                  num_str = parts[1] if len(parts) > 1 else (lines[1] if len(lines) > 1 else "")
+                  if num_str.isdigit() and 0 <= int(num_str) - 1 < len(quizzes):
+                      removed = quizzes.pop(int(num_str) - 1)
+                      send_tg(chat_id, f"🗑️ تم حذف السؤال رقم [{num_str}]: {removed.get('q')}")
+                  else:
+                      send_tg(chat_id, "⚠️ رقم السؤال غير صحيح. أرسل /quizzes لعرض الأرقام.")
+                  continue
+
+              if cmd_head == "/edit_quiz":
+                  parts = lines[0].split()
+                  num_str = parts[1] if len(parts) > 1 else ""
+                  if num_str.isdigit() and len(lines) >= 3 and 0 <= int(num_str) - 1 < len(quizzes):
+                      q_idx = int(num_str) - 1
+                      wrong_opts = lines[3:]
+                      quizzes[q_idx] = {
+                          "type": "auto" if wrong_opts else "trad",
+                          "q": lines[1],
+                          "options": ([lines[2]] + wrong_opts) if wrong_opts else [],
+                          "correct": 0,
+                          "explain": f"الإجابة الصحيحة: {lines[2]}" if wrong_opts else "\n".join(lines[2:])
+                      }
+                      send_tg(chat_id, f"✅ تم تعديل السؤال رقم [{num_str}] بنجاح!")
+                  else:
+                      send_tg(chat_id, "⚠️ صيغة التعديل:\n/edit_quiz رقم\nالسؤال الجديد\nالإجابة الصحيحة\nخيار خاطئ (اختياري)")
+                  continue
+
+              # أوامر المالك الحصرية
+              if cmd_head in ["/add_admin", "/del_admin", "/add_file", "/del_file", "/books_list", "/mark_ok"]:
+                  if not is_owner:
+                      send_tg(chat_id, "⛔ عذراً، هذا الأمر مخصص لمالك التطبيق حصراً.")
+                      continue
+
+                  if cmd_head == "/add_admin":
+                      target = lines[0].replace("/add_admin", "").strip().lstrip("@").lower()
+                      if not target and len(lines) > 1: target = lines[1].lstrip("@").lower()
+                      if target:
+                          if target.isdigit():
+                              if target not in admins_state["sub_admin_ids"]: admins_state["sub_admin_ids"].append(target)
+                          else:
+                              if target not in admins_state["sub_admin_usernames"]: admins_state["sub_admin_usernames"].append(target)
+                          send_tg(chat_id, f"✅ تم إضافة (@{target}) كأدمن اختبارات فقط.")
+                      continue
+
+                  if cmd_head == "/del_admin":
+                      target = lines[0].replace("/del_admin", "").strip().lstrip("@").lower()
+                      if target in admins_state["sub_admin_usernames"]: admins_state["sub_admin_usernames"].remove(target)
+                      if target in admins_state["sub_admin_ids"]: admins_state["sub_admin_ids"].remove(target)
+                      send_tg(chat_id, f"🗑️ تم إلغاء صلاحية (@{target}).")
+                      continue
+
+                  if cmd_head == "/mark_ok":
+                      parts = lines[0].split()
+                      if len(parts) > 1 and parts[1].isdigit():
+                          bnum = int(parts[1])
+                          if bnum not in audit_tracker["approved"]:
+                              audit_tracker["approved"].append(bnum)
+                          send_tg(chat_id, f"✅ تم اعتماد الكتاب رقم [#{bnum}] كطبعة مدققة!")
+                      continue
+
+                  if cmd_head == "/books_list":
+                      b_lines = ["📚 قائمة الكتب وأرقامها:\n"]
+                      for b in catalog_state.get("books", []):
+                          if b["num"] not in catalog_state["deleted_nums"]:
+                              mark = "✅" if b["num"] in audit_tracker["approved"] else "⏳"
+                              b_lines.append(f"{mark} [{b['num']}] : {b['title']} ({b.get('lang','ar').upper()})")
+                      send_tg(chat_id, "\n".join(b_lines))
+                      continue
+
+                  if cmd_head == "/del_file":
+                      parts = lines[0].split()
+                      b_num_str = parts[1] if len(parts) > 1 else (lines[1] if len(lines) > 1 else "")
+                      if b_num_str.isdigit():
+                          bnum = int(b_num_str)
+                          if bnum not in catalog_state["deleted_nums"]:
+                              catalog_state["deleted_nums"].append(bnum)
+                          catalog_state["books"] = [b for b in catalog_state.get("books", []) if int(b["num"]) != bnum]
+                          if os.path.exists(f"data/user_books/{bnum}.json"):
+                              os.remove(f"data/user_books/{bnum}.json")
+                          send_tg(chat_id, f"🗑️ تم حذف الكتاب رقم [{bnum}] نهائياً من التطبيق.")
+                      continue
+
+                  if cmd_head == "/add_file":
+                      if len(lines) >= 3:
+                          admins_state["pending_upload"] = {
+                              "lang": normalize_lang_input(lines[1]),
+                              "category": lines[2],
+                              "title": lines[3] if len(lines) >= 4 else ""
+                          }
+                          if not doc:
+                              send_tg(chat_id, f"📌 جاهز للاستقبال:\n• اللغة: {admins_state['pending_upload']['lang'].upper()}\n• القسم: {lines[2]}\n\n📤 أرسل ملف الكتاب (EPUB أو PDF) الآن!")
+                      else:
+                          send_tg(chat_id, "⚠️ أرسل:\n/add_file\nعربي (أو فرنسي / انكليزي)\nاسم القسم\nاسم الكتاب (اختياري)")
+                          continue
+
+              if is_owner and doc and admins_state.get("pending_upload"):
+                  up_cfg = admins_state["pending_upload"]
+                  fname = doc.get("file_name") or "book.epub"
+                  fsize = doc.get("file_size", 0)
+                  fid = doc.get("file_id")
+                  if fsize < 19950000 and (fname.lower().endswith(".epub") or fname.lower().endswith(".pdf")):
+                      finfo = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={fid}", timeout=20).json()
+                      fpath = (finfo.get("result") or {}).get("file_path")
+                      if fpath:
+                          raw_b = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{fpath}", timeout=55).content
+                          ext, chaps = extract_book_preserving_structure(raw_b, fname, up_cfg["lang"])
+                          if chaps:
+                              bnum = max(catalog_state.get("next_num", 94), 94)
+                              catalog_state["next_num"] = bnum + 1
+                              final_title = up_cfg.get("title") or re.sub(r'\.(epub|pdf)$', '', fname, flags=re.I)
+                              catalog_state["books"].append({
+                                  "num": bnum, "title": final_title, "lang": up_cfg["lang"],
+                                  "category": up_cfg["category"], "sort_order": 50,
+                                  "custom_added": True, "format": ext, "chapters_count": len(chaps)
+                              })
+                              with open(f"data/user_books/{bnum}.json", "w", encoding="utf-8") as bf:
+                                  json.dump({"num": bnum, "title": final_title, "lang": up_cfg["lang"], "category": up_cfg["category"], "chapters": chaps}, bf, ensure_ascii=False)
+                              admins_state["pending_upload"] = None
+                              send_tg(chat_id, f"✅ تم تثبيت الكتاب «{final_title}» برقم [#{bnum}] بنجاح!")
+
+          # 4. تحديث وتنظيف فهرس البحث الشامل لجميع الكتب
           search_index = []
           for bfile in sorted(glob.glob("data/user_books/*.json")):
               try:
@@ -58,35 +452,32 @@ jobs:
                   bnum = int(bdata.get("num", 0))
                   blang = bdata.get("lang", "ar")
                   new_chaps = []
-
                   for idx, ch in enumerate(bdata.get("chapters", []), 1):
                       ctitle = strip_garbled(ch.get("title", ""))
                       if blang != "ar":
                           ctitle = re.sub(r'^(القسم|الفصل)\s*(\d+)', r'Section \2', ctitle)
                       sp = BeautifulSoup(ch.get("html", ""), "lxml")
-                      leaf_tags = sp.find_all(["p", "h1", "h2", "h3", "h4", "li"])
+                      leaf_tags = sp.find_all(["h2", "h3", "p", "li"])
                       if not leaf_tags:
-                          raw_lines = [strip_garbled(ln) for ln in sp.get_text("\n").split("\n") if strip_garbled(ln)]
+                          raw_lines = [( "p", strip_garbled(ln) ) for ln in sp.get_text("\n").split("\n") if strip_garbled(ln)]
                       else:
-                          raw_lines = [strip_garbled(t.get_text(" ", strip=True)) for t in leaf_tags if strip_garbled(t.get_text(" ", strip=True))]
+                          raw_lines = [( t.name if t.name in ["h2", "h3"] else "p", strip_garbled(t.get_text(" ", strip=True)) ) for t in leaf_tags if strip_garbled(t.get_text(" ", strip=True))]
 
-                      deduped = []
+                      deduped_tags = []
                       seen_norms = set()
-                      for ln in raw_lines:
+                      for tag_name, ln in raw_lines:
                           nl = norm_ar(ln)
                           if len(nl) < 2: continue
-                          if nl in seen_norms and len(nl) > 12:
-                              continue
+                          if nl in seen_norms and len(nl) > 12: continue
                           seen_norms.add(nl)
-                          deduped.append(ln)
+                          deduped_tags.append(f"<{tag_name}>{ln}</{tag_name}>")
                           if len(ln) > 25:
                               search_index.append({"b": bnum, "c": idx - 1, "l": blang, "t": ln[:240]})
 
-                      if deduped:
+                      if deduped_tags:
                           ch["title"] = ctitle or (f"Section {idx}" if blang != "ar" else f"المبحث {idx}")
-                          ch["html"] = "\n".join(f"<p>{p}</p>" for p in deduped)
+                          ch["html"] = "\n".join(deduped_tags)
                           new_chaps.append(ch)
-
                   bdata["chapters"] = new_chaps
                   with open(bfile, "w", encoding="utf-8") as f:
                       json.dump(bdata, f, ensure_ascii=False)
@@ -94,12 +485,20 @@ jobs:
                   pass
 
           with open("data/books_search_index.json", "w", encoding="utf-8") as f:
-              json.dump(search_index[:22000], f, ensure_ascii=False)
+              json.dump(search_index[:25000], f, ensure_ascii=False)
+          with open(admins_path, "w", encoding="utf-8") as f:
+              json.dump(admins_state, f, ensure_ascii=False, indent=2)
+          with open(quiz_path, "w", encoding="utf-8") as f:
+              json.dump(quizzes, f, ensure_ascii=False, indent=2)
+          with open(catalog_path, "w", encoding="utf-8") as f:
+              json.dump(catalog_state, f, ensure_ascii=False, indent=2)
+          with open(audit_path, "w", encoding="utf-8") as f:
+              json.dump(audit_tracker, f, ensure_ascii=False, indent=2)
           EOF
 
-      - name: Commit Cleaned Books & Search Index
+      - name: Commit Updated Data & Bot State
         run: |
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
           git add data/
-          git diff --staged --quiet || (git commit -m "Deduplicate book paragraphs, strip garbled QCF glyphs, rebuild search index" && git pull --rebase origin main && git push)
+          git diff --staged --quiet || (git commit -m "Run Bot CMS, preserve book structure & update search/audit index" && git pull --rebase origin main && git push)
