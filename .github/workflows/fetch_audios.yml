@@ -4,12 +4,18 @@ on:
   push:
     paths:
       - '.github/workflows/fetch_audios.yml'
+  schedule:
+    - cron: '*/10 * * * *'
   workflow_dispatch:
     inputs:
       batch_size:
         description: 'عدد الملفات الصوتية في كل دفعة (موصى به 40)'
         required: false
         default: '40'
+
+concurrency:
+  group: fetch-audios-lock
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -69,26 +75,61 @@ jobs:
               with open(catalog_path, "r", encoding="utf-8") as f:
                   audio_catalog = json.load(f)
           else:
-              audio_catalog = {"uploaded": {}, "failed": {}, "stats": {}}
+              audio_catalog = {"uploaded": {}, "failed": {}, "stats": {}, "completed_notified": False}
 
           uploaded_map = audio_catalog.get("uploaded", {})
           failed_map = audio_catalog.get("failed", {})
-          pending = [it for it in audio_items if str(it["id"]) not in uploaded_map]
+
+          def is_permanently_skipped(aid):
+              f = failed_map.get(aid)
+              if not f:
+                  return False
+              if f.get("reason") in ("empty_url", "over_50mb"):
+                  return True
+              return int(f.get("attempts", 1)) >= 2
+
+          pending = [
+              it for it in audio_items
+              if str(it["id"]) not in uploaded_map and not is_permanently_skipped(str(it["id"]))
+          ]
 
           if not pending:
-              send_msg(f"🏆 تم سحب وأرشفة جميع الملفات الصوتية بنجاح! الإجمالي: {len(uploaded_map)} ملفاً.")
+              if not audio_catalog.get("completed_notified"):
+                  ar_up = sum(1 for v in uploaded_map.values() if v.get("lang") == "ar")
+                  en_up = sum(1 for v in uploaded_map.values() if v.get("lang") == "en")
+                  fr_up = sum(1 for v in uploaded_map.values() if v.get("lang") == "fr")
+                  send_msg(
+                      f"🏆 اكتمل السحب التلقائي لجميع الملفات الصوتية!\n\n"
+                      f"📊 الإجمالي المرفوع: {len(uploaded_map)} من أصل {len(audio_items)}\n"
+                      f"   • عربي (AR): {ar_up}\n"
+                      f"   • إنجليزي (EN): {en_up}\n"
+                      f"   • فرنسي (FR): {fr_up}\n"
+                      f"⚠️ ملفات تعذر سحبها نهائياً: {len(failed_map)}\n\n"
+                      f"🔕 لن تصلك رسائل أخرى تلقائياً، ويمكنك الآن إيقاف العملية من Actions."
+                  )
+                  audio_catalog["completed_notified"] = True
+                  with open(catalog_path, "w", encoding="utf-8") as f:
+                      json.dump(audio_catalog, f, ensure_ascii=False, indent=2)
               raise SystemExit(0)
 
+          audio_catalog["completed_notified"] = False
           send_msg(
-              f"🎧 بدء سحب دفعة جديدة من الملفات الصوتية...\n"
+              f"🎧 بدء دفعة سحب تلقائية...\n"
               f"• المرفوع سابقاً: {len(uploaded_map)} من أصل {len(audio_items)}\n"
               f"• حجم هذه الدفعة: {min(BATCH_LIMIT, len(pending))} ملفاً"
           )
 
+          def record_fail(aid, info):
+              prev_att = int((failed_map.get(aid) or {}).get("attempts", 0))
+              info["attempts"] = prev_att + 1
+              failed_map[aid] = info
+
           sent_this_run = 0
+          processed_this_run = 0
           for it in pending:
-              if sent_this_run >= BATCH_LIMIT:
+              if sent_this_run >= BATCH_LIMIT or processed_this_run >= BATCH_LIMIT + 15:
                   break
+              processed_this_run += 1
 
               aid = str(it["id"])
               cat = it.get("category") or {}
@@ -101,7 +142,7 @@ jobs:
                   fname += ".mp3"
 
               if not raw_url or raw_url == "0":
-                  failed_map[aid] = {"title": title, "reason": "empty_url"}
+                  record_fail(aid, {"title": title, "reason": "empty_url"})
                   continue
 
               candidate_urls = [raw_url]
@@ -122,11 +163,11 @@ jobs:
                       pass
 
               if not audio_bytes:
-                  failed_map[aid] = {"title": title, "lang": lang, "cat": cat_name, "url": raw_url, "reason": "download_failed"}
+                  record_fail(aid, {"title": title, "lang": lang, "cat": cat_name, "url": raw_url, "reason": "download_failed"})
                   continue
 
               if len(audio_bytes) > 49500000:
-                  failed_map[aid] = {"title": title, "size_mb": round(len(audio_bytes)/1048576, 1), "reason": "over_50mb"}
+                  record_fail(aid, {"title": title, "size_mb": round(len(audio_bytes)/1048576, 1), "reason": "over_50mb"})
                   continue
 
               caption = f"🎧 [{lang.upper()}] #{aid}\n📂 {cat_name}\n🎙️ {title}"
@@ -170,13 +211,18 @@ jobs:
                           wait_s = int((resp.get("parameters") or {}).get("retry_after", 10)) + 2
                           time.sleep(wait_s)
                       else:
-                          failed_map[aid] = {"title": title, "reason": resp.get("description", "tg_error")}
+                          record_fail(aid, {"title": title, "reason": resp.get("description", "tg_error")})
                           break
                   except Exception as e:
                       if attempt == 2:
-                          failed_map[aid] = {"title": title, "reason": str(e)}
+                          record_fail(aid, {"title": title, "reason": str(e)})
                       else:
                           time.sleep(3)
+
+          remaining_now = sum(
+              1 for it in audio_items
+              if str(it["id"]) not in uploaded_map and not is_permanently_skipped(str(it["id"]))
+          )
 
           audio_catalog["uploaded"] = uploaded_map
           audio_catalog["failed"] = failed_map
@@ -184,7 +230,7 @@ jobs:
               "total_in_source": len(audio_items),
               "uploaded_count": len(uploaded_map),
               "failed_count": len(failed_map),
-              "remaining_count": len(audio_items) - len(uploaded_map)
+              "remaining_count": remaining_now
           }
 
           with open(catalog_path, "w", encoding="utf-8") as f:
@@ -195,15 +241,15 @@ jobs:
           fr_up = sum(1 for v in uploaded_map.values() if v.get("lang") == "fr")
 
           send_msg(
-              f"✅ انتهت هذه الدفعة بنجاح!\n\n"
-              f"📤 تم إرسال {sent_this_run} ملفاً صوتياً في هذه الدفعة.\n"
-              f"📊 الإجمالي المرفوع حتى الآن: {len(uploaded_map)} من أصل {len(audio_items)}\n"
+              f"✅ انتهت هذه الدفعة!\n\n"
+              f"📤 تم إرسال {sent_this_run} ملفاً في هذه الدفعة.\n"
+              f"📊 الإجمالي المرفوع: {len(uploaded_map)} من أصل {len(audio_items)}\n"
               f"   • عربي (AR): {ar_up}\n"
               f"   • إنجليزي (EN): {en_up}\n"
               f"   • فرنسي (FR): {fr_up}\n"
-              f"⚠️ ملفات تعذر سحبها: {len(failed_map)}\n"
-              f"⏳ المتبقي للسحب: {len(audio_items) - len(uploaded_map)}\n\n"
-              f"💡 لسحب الدفعة التالية (40 ملفاً): اضغط Run workflow في صفحة Actions."
+              f"⚠️ تعذر سحبها: {len(failed_map)}\n"
+              f"⏳ المتبقي: {remaining_now}\n"
+              f"⏱️ ستبدأ الدفعة التالية تلقائياً بعد 10 دقائق."
           )
           EOF
 
@@ -212,4 +258,4 @@ jobs:
           git config user.name "RohAlquranBot"
           git config user.email "bot@rohalquran.app"
           git add data/audio_catalog.json
-          git diff --staged --quiet || (git commit -m "Update archived Telegram audio catalog" && git pull --rebase origin main && git push)
+          git diff --staged --quiet || (git commit -m "Auto-update archived Telegram audio catalog" && git pull --rebase --autostash origin main && git push)
