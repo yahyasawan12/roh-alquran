@@ -1,0 +1,215 @@
+name: Fetch All Audio Files (AR, EN, FR) & Upload to Telegram Bot
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fetch_audios.yml'
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: 'عدد الملفات الصوتية في كل دفعة (موصى به 40)'
+        required: false
+        default: '40'
+
+permissions:
+  contents: write
+
+jobs:
+  pull-and-send-audios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install requests urllib3
+
+      - name: Download Audios & Send to Roh Al-Quran Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BO_TOKEN }}
+          TARGET_CHAT_ID: "5205216077"
+          BATCH_LIMIT: ${{ github.event.inputs.batch_size || '40' }}
+        run: |
+          python3 - << 'EOF'
+          import os, re, time, json, urllib3
+          import requests
+          urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+          TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+          TARGET_CHAT = str(os.environ.get("TARGET_CHAT_ID", "5205216077")).strip()
+          BATCH_LIMIT = int(os.environ.get("BATCH_LIMIT", "40") or "40")
+
+          os.makedirs("data", exist_ok=True)
+          books_path = "data/api_v1_books.json"
+          catalog_path = "data/audio_catalog.json"
+
+          def send_msg(text):
+              for i in range(0, len(text), 3800):
+                  try:
+                      requests.post(
+                          f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                          json={"chat_id": TARGET_CHAT, "text": text[i:i+3800]},
+                          timeout=20
+                      )
+                  except Exception:
+                      pass
+
+          with open(books_path, "r", encoding="utf-8") as f:
+              all_items = json.load(f).get("data", [])
+
+          audio_items = [it for it in all_items if it.get("is_audio")]
+          audio_items.sort(key=lambda x: (
+              (x.get("category") or {}).get("language", "ar"),
+              int(x.get("cat_id") or 0),
+              int(x.get("sort_order") or 0),
+              int(x.get("id") or 0)
+          ))
+
+          if os.path.exists(catalog_path):
+              with open(catalog_path, "r", encoding="utf-8") as f:
+                  audio_catalog = json.load(f)
+          else:
+              audio_catalog = {"uploaded": {}, "failed": {}, "stats": {}}
+
+          uploaded_map = audio_catalog.get("uploaded", {})
+          failed_map = audio_catalog.get("failed", {})
+          pending = [it for it in audio_items if str(it["id"]) not in uploaded_map]
+
+          if not pending:
+              send_msg(f"🏆 تم سحب وأرشفة جميع الملفات الصوتية بنجاح! الإجمالي: {len(uploaded_map)} ملفاً.")
+              raise SystemExit(0)
+
+          send_msg(
+              f"🎧 بدء سحب دفعة جديدة من الملفات الصوتية...\n"
+              f"• المرفوع سابقاً: {len(uploaded_map)} من أصل {len(audio_items)}\n"
+              f"• حجم هذه الدفعة: {min(BATCH_LIMIT, len(pending))} ملفاً"
+          )
+
+          sent_this_run = 0
+          for it in pending:
+              if sent_this_run >= BATCH_LIMIT:
+                  break
+
+              aid = str(it["id"])
+              cat = it.get("category") or {}
+              lang = (cat.get("language") or "ar").lower()
+              cat_name = cat.get("name") or it.get("album") or "صوتيات"
+              title = (it.get("title") or it.get("name") or f"Audio {aid}").strip()
+              raw_url = (it.get("url") or "").strip()
+              fname = (it.get("file_name") or f"{aid}.mp3").strip()
+              if not fname.lower().endswith(".mp3"):
+                  fname += ".mp3"
+
+              if not raw_url or raw_url == "0":
+                  failed_map[aid] = {"title": title, "reason": "empty_url"}
+                  continue
+
+              candidate_urls = [raw_url]
+              if raw_url.startswith("http://alamin-library.com"):
+                  candidate_urls.append(raw_url.replace("http://alamin-library.com", "https://new.alamin-library.com"))
+                  candidate_urls.append(raw_url.replace("http://", "https://"))
+
+              audio_bytes = None
+              used_url = raw_url
+              for u in candidate_urls:
+                  try:
+                      r = requests.get(u, timeout=35, verify=False, headers={"User-Agent": "Dart/3.3"})
+                      if r.status_code == 200 and len(r.content) > 5000 and b"<!DOCTYPE" not in r.content[:200] and b"<html" not in r.content[:200].lower():
+                          audio_bytes = r.content
+                          used_url = u
+                          break
+                  except Exception:
+                      pass
+
+              if not audio_bytes:
+                  failed_map[aid] = {"title": title, "lang": lang, "cat": cat_name, "url": raw_url, "reason": "download_failed"}
+                  continue
+
+              if len(audio_bytes) > 49500000:
+                  failed_map[aid] = {"title": title, "size_mb": round(len(audio_bytes)/1048576, 1), "reason": "over_50mb"}
+                  continue
+
+              caption = f"🎧 [{lang.upper()}] #{aid}\n📂 {cat_name}\n🎙️ {title}"
+              safe_filename = f"{aid}_{re.sub(r'[^a-zA-Z0-9_.-]', '_', fname)}"
+
+              for attempt in range(3):
+                  try:
+                      resp = requests.post(
+                          f"https://api.telegram.org/bot{TOKEN}/sendAudio",
+                          data={
+                              "chat_id": TARGET_CHAT,
+                              "caption": caption[:1000],
+                              "title": title[:64],
+                              "performer": cat_name[:64]
+                          },
+                          files={"audio": (safe_filename, audio_bytes, "audio/mpeg")},
+                          timeout=90
+                      ).json()
+
+                      if resp.get("ok"):
+                          res_msg = resp["result"]
+                          audio_obj = res_msg.get("audio") or res_msg.get("document") or {}
+                          uploaded_map[aid] = {
+                              "id": int(aid),
+                              "cat_id": int(it.get("cat_id") or 0),
+                              "cat_name": cat_name,
+                              "lang": lang,
+                              "title": title,
+                              "orig_url": used_url,
+                              "tg_message_id": res_msg.get("message_id"),
+                              "tg_file_id": audio_obj.get("file_id"),
+                              "duration": audio_obj.get("duration", 0),
+                              "size": len(audio_bytes)
+                          }
+                          if aid in failed_map:
+                              del failed_map[aid]
+                          sent_this_run += 1
+                          time.sleep(1.8)
+                          break
+                      elif resp.get("error_code") == 429:
+                          wait_s = int((resp.get("parameters") or {}).get("retry_after", 10)) + 2
+                          time.sleep(wait_s)
+                      else:
+                          failed_map[aid] = {"title": title, "reason": resp.get("description", "tg_error")}
+                          break
+                  except Exception as e:
+                      if attempt == 2:
+                          failed_map[aid] = {"title": title, "reason": str(e)}
+                      else:
+                          time.sleep(3)
+
+          audio_catalog["uploaded"] = uploaded_map
+          audio_catalog["failed"] = failed_map
+          audio_catalog["stats"] = {
+              "total_in_source": len(audio_items),
+              "uploaded_count": len(uploaded_map),
+              "failed_count": len(failed_map),
+              "remaining_count": len(audio_items) - len(uploaded_map)
+          }
+
+          with open(catalog_path, "w", encoding="utf-8") as f:
+              json.dump(audio_catalog, f, ensure_ascii=False, indent=2)
+
+          ar_up = sum(1 for v in uploaded_map.values() if v.get("lang") == "ar")
+          en_up = sum(1 for v in uploaded_map.values() if v.get("lang") == "en")
+          fr_up = sum(1 for v in uploaded_map.values() if v.get("lang") == "fr")
+
+          send_msg(
+              f"✅ انتهت هذه الدفعة بنجاح!\n\n"
+              f"📤 تم إرسال {sent_this_run} ملفاً صوتياً في هذه الدفعة.\n"
+              f"📊 الإجمالي المرفوع حتى الآن: {len(uploaded_map)} من أصل {len(audio_items)}\n"
+              f"   • عربي (AR): {ar_up}\n"
+              f"   • إنجليزي (EN): {en_up}\n"
+              f"   • فرنسي (FR): {fr_up}\n"
+              f"⚠️ ملفات تعذر سحبها: {len(failed_map)}\n"
+              f"⏳ المتبقي للسحب: {len(audio_items) - len(uploaded_map)}\n\n"
+              f"💡 لسحب الدفعة التالية (40 ملفاً): اضغط Run workflow في صفحة Actions."
+          )
+          EOF
+
+      - name: Commit Audio Catalog
+        run: |
+          git config user.name "RohAlquranBot"
+          git config user.email "bot@rohalquran.app"
+          git add data/audio_catalog.json
+          git diff --staged --quiet || (git commit -m "Update archived Telegram audio catalog" && git pull --rebase origin main && git push)
