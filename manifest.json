@@ -1,0 +1,21 @@
+{
+  "name": "روح القرآن ونعيمه",
+  "short_name": "روح القرآن",
+  "description": "المصحف الشريف وتأويله ومؤلفات العلامة الإنساني محمد أمين شيخو باللغات العربية والفرنسية والإنجليزية",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#FAF8F5",
+  "theme_color": "#14532D",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/4358/4358667.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
